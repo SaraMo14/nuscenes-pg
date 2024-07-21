@@ -180,7 +180,7 @@ class AVDiscretizerD1(AVDiscretizer):
                                                                 Predicate(FrontRightObjects, [FrontLeftObjects(left_cam, self.obj_discretization)])
                                                         
                                                         print(f'distance: {self.distance(state, nearby_state)}')
-                                                        if 1 < self.distance(state, nearby_state) <=self.eps:
+                                                        if 1 < self.distance(state, nearby_state) < self.eps:
                                                             yield nearby_state
 
 

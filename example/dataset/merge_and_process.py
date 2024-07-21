@@ -75,11 +75,14 @@ class SceneDataProcessor(BaseTableLoader):
 
     def run_processing(self, test_size, random_state=42):
         states = self.process_scene_data()
-        train_df, test_df = utils.train_test_split_by_scene(states, test_size, random_state)
-        
-        train_df.to_csv(Path(self.dataoutput) / f'train_{self.version}_{self.sensor}_{1 if self.camera else 0}.csv', index=False)
-        test_df.to_csv(Path(self.dataoutput) / f'test_{self.version}_{self.sensor}_{1 if self.camera else 0}.csv', index=False)
-
+        if test_size > 0:
+            train_df, test_df = utils.train_test_split_by_scene(states, test_size, random_state)
+            
+            train_df.to_csv(Path(self.dataoutput) / f'train_{self.version}_{self.sensor}_{1 if self.camera else 0}.csv', index=False)
+            test_df.to_csv(Path(self.dataoutput) / f'test_{self.version}_{self.sensor}_{1 if self.camera else 0}.csv', index=False)
+        else:
+            states.to_csv(Path(self.dataoutput) / f'full_{self.version}_{self.sensor}_{1 if self.camera else 0}.csv', index=False)
+         
         print(f"Dataset successfully saved to {self.dataoutput}")
 
 if __name__ == "__main__":

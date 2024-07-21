@@ -10,9 +10,11 @@ import os
 
 import pandas as pd
 
+#TODO: split into 2 files: metrics computation and testing
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--training_id',
+    parser.add_argument('--pg_id',
                         help='The id of the Policy Graph to be loaded')
     parser.add_argument('--test_set',
                         help="csv file containg the test set of the preprocessed nuScenes dataset.")
@@ -35,7 +37,7 @@ if __name__ == '__main__':
 
     
     args = parser.parse_args()
-    training_id, city_id, discretizer_id, test_set, verbose = args.training_id, args.city, args.discretizer, args.test_set, args.verbose#, args.rain, args.night
+    pg_id, city_id, discretizer_id, test_set, verbose = args.pg_id, args.city, args.discretizer, args.test_set, args.verbose#, args.rain, args.night
     
 
     #load test set
@@ -46,7 +48,7 @@ if __name__ == '__main__':
         'location': 'str',
         'rain': 'int',
         'night':'int',
-        'timestamp': 'str',  # To enable datetime operations
+        'timestamp': 'str',  # to enable datetime operations
         'rotation': 'object',  # Quaternion (lists)
         'x': 'float64',
         'y': 'float64',
@@ -85,8 +87,8 @@ if __name__ == '__main__':
         
         
     
-    nodes_path = f'example/dataset/data/policy_graphs/{training_id}_nodes.csv'
-    edges_path = f'example/dataset/data/policy_graphs/{training_id}_edges.csv'
+    nodes_path = f'example/dataset/data/policy_graphs/{pg_id}_nodes.csv'
+    edges_path = f'example/dataset/data/policy_graphs/{pg_id}_edges.csv'
         
     if city_id == 'all':
         environment = SelfDrivingEnvironment(city_id)
@@ -128,26 +130,6 @@ if __name__ == '__main__':
         print()
 
 
-
-    ##################
-    # static metrics
-    ##################
-    evaluator = PolicyGraphEvaluator(pg)
-    output_path = 'example/results/entropy.csv'
-    file_exists = os.path.isfile(output_path)
-    with open(output_path, 'a',newline='') as f:
-        csv_w = csv.writer(f)
-        if not file_exists:
-            header = ['training_id', 'Expected_Hs', 'Expected_Ha', 'Expected_Hw']
-            csv_w.writerow(header)
-        entropy_values = evaluator.compute_external_entropy()
-        new_row = [
-            training_id,
-            entropy_values.get('Expected_Hs'),
-            entropy_values.get('Expected_Ha'),
-            entropy_values.get('Expected_Hw')
-            ]
-        csv_w.writerow(new_row)
     
     
 
@@ -157,11 +139,11 @@ if __name__ == '__main__':
         with open(output_path, 'a',newline='') as f:
             csv_w = csv.writer(f)
             if not file_exists:
-                header = ['training_id','avg_nll_action', 'std_nll_action', 'avg_nll_world', 'std_nll_world' ]
+                header = ['pg_id','avg_nll_action', 'std_nll_action', 'avg_nll_world', 'std_nll_world' ]
                 csv_w.writerow(header)
             avg_nll_action, std_nll_action, avg_nll_world, std_nll_world = agent.compute_test_nll(test_set=test_df, verbose = verbose)
             new_row = [
-                training_id,
+                pg_id,
                 avg_nll_action,
                 std_nll_action, 
                 avg_nll_world, 
