@@ -117,6 +117,7 @@ if __name__ == '__main__':
     split = 'mini' if 'mini' in data_file else 'trainval'
 
     if output_format == 'csv':
+        #split = 'hv_20_'
         nodes_path = f'example/dataset/data/policy_graphs/PG_{split}_C{city_id}_D{discretizer_id}_W{weather}_T{tod}_nodes.{output_format}'
         edges_path = f'example/dataset/data/policy_graphs/PG_{split}_C{city_id}_D{discretizer_id}_W{weather}_T{tod}_edges.{output_format}'
         traj_path = f'example/dataset/data/policy_graphs/PG_{split}_C{city_id}_D{discretizer_id}_W{weather}_T{tod}_traj.{output_format}'

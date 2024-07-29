@@ -44,11 +44,11 @@ class SceneDataProcessor(BaseTableLoader):
 
     def process_scene_data(self):
         sample = pd.read_csv(Path(self.dataoutput) / 'can_data.csv')
-        os.remove(Path(self.dataoutput) / 'can_data.csv')
+        #os.remove(Path(self.dataoutput) / 'can_data.csv')
         if self.camera:
             cam_data_path = Path(self.dataoutput) / 'cam_detection.csv'
             sample = pd.merge(sample, pd.read_csv(cam_data_path), on='sample_token')
-            os.remove(Path(self.dataoutput) / 'cam_detection.csv')
+            #os.remove(Path(self.dataoutput) / 'cam_detection.csv')
 
         sample_data = pd.DataFrame(self.sample_data).query(f"is_key_frame == {self.key_frames}")[['sample_token', 'ego_pose_token', 'calibrated_sensor_token']]
         

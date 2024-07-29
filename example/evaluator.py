@@ -41,9 +41,8 @@ class PolicyGraphEvaluator:
                 for _, next_state, data in action_specific_out_edges:
                     P_s_a_given_s = data['probability'] #p(s',a|s) 
                     Hs -=P_s_a_given_s*np.log2(P_s_a_given_s)
-                    Hw -=  P_s_a_given_s* np.log2(P_s_a_given_s/P_a_given_s)
+                    Hw -=  P_s_a_given_s* np.log2(P_s_a_given_s/P_a_given_s) #data['frequency']/freq
                     
-            
             entropy_metrics[state] = {'p_s':self.policy_graph.nodes[state]['probability'],'Hs': Hs, 'Ha': Ha, 'Hw': Hw}
             
         return entropy_metrics

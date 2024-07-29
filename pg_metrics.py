@@ -76,4 +76,5 @@ if __name__ == '__main__':
     
     print(f'Successfully evaluated Policy Graph with {len(pg.nodes)} nodes and {len(pg.edges)} edges.')
     
-    #python3 po_metrics.py --pg_id pg_trainval_Cb_D0 
+# python3 po_metrics.py --pg_id pg_trainval_Cb_D0 python3 pg_metrics.py --pg_id PG_trainval_Call_D0c_Wall_Tall
+

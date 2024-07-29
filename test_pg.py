@@ -139,20 +139,24 @@ if __name__ == '__main__':
         with open(output_path, 'a',newline='') as f:
             csv_w = csv.writer(f)
             if not file_exists:
-                header = ['pg_id','avg_nll_action', 'std_nll_action', 'avg_nll_world', 'std_nll_world' ]
+                header = ['pg_id','test_id','avg_nll_action', 'std_nll_action', 'avg_nll_world', 'std_nll_world','avg_nll_tot', 'std_nll_tot' ]
                 csv_w.writerow(header)
-            avg_nll_action, std_nll_action, avg_nll_world, std_nll_world = agent.compute_test_nll(test_set=test_df, verbose = verbose)
+            avg_nll_action, std_nll_action, avg_nll_world, std_nll_world, avg_nll_tot, std_nll_tot = agent.compute_test_nll(test_set=test_df, verbose = verbose)
             new_row = [
                 pg_id,
+                test_set,
                 avg_nll_action,
                 std_nll_action, 
                 avg_nll_world, 
-                std_nll_world
+                std_nll_world,
+                avg_nll_tot,
+                std_nll_tot
                 ]
             csv_w.writerow(new_row)
     
 
-    
+    #python3 test_pg.py --pg_id PG_trainval_Call_D1c_Wall_Tall --test_set 'low_visibility.csv' --policy-mode original --action-mode random --discretizer 1c --city 'all' --verbose
+
   
     
     #python3 test_pg.py --training_id pg_trainval_Cb_D0 --test_set 'test_v1.0-mini_lidar_0.csv' --policy-mode greedy --action-mode random --discretizer 0 --city 'b' --verbose

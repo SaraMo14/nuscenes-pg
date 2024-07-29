@@ -1050,12 +1050,10 @@ class PGBasedPolicy(Agent):
         Return:
             nll_a: Negative log likelihood of the policy
             nll_w: Negative log likelihood of the world model
-            h_a: Entropy for the policy.
-            h_w: Entropy for the world model.
         """
         nll_a = 0
         nll_w = 0
-        
+        nll_tot = 0
 
         for t in range(0, len(trajectory) - 2, 2):
             s_t, a_t, s_next = trajectory[t], trajectory[t + 1], trajectory[t + 2]
@@ -1070,21 +1068,21 @@ class PGBasedPolicy(Agent):
 
             
             #P(s'|s,a)
-            p_s_next_given_s_a = self.get_probability(s_t, s_next, a_t, eps)
+            p_s_next_given_s_a = self.get_probability(s_t, s_next, a_t, eps)/p_a_given_s
             nll_w -=np.log(p_s_next_given_s_a)
             
-            if verbose:       
-                print(f"Neg-Log-Likelihood for Policy: {-np.log(p_a_given_s):.4f}")
-                print(f"Neg-Log-Likelihood for World Model: {-np.log(p_s_next_given_s_a):.4f}")
-                
-                print()
-        return nll_a, nll_w
+            nll_tot -=np.log(self.get_probability(s_t, s_next, a_t, eps))
+        
+        if verbose:       
+            print(f"Scene Neg-Log-Likelihood for Policy: {nll_a:.4f}")
+            print(f"Scene Neg-Log-Likelihood for World Model: {nll_w:.4f}")
+            print(f'Scene Neg-Log-Likelihood P(s_t1, a| s_t0): {nll_tot:.4f}')
+            print()
+        return nll_a, nll_w, nll_tot
     
 
     def get_probability(self, s_t, s_next, a_t, eps):
         """
-        Gets the probability of transitioning from state s_t to s_next given action a_t.
-
         Args:
             s_t: Current state.
             s_next: Next state.
@@ -1092,7 +1090,7 @@ class PGBasedPolicy(Agent):
             eps: Small constant to avoid log of zero.
 
         Returns:
-            Probability of the transition.
+            P(s',a|s)
         """
         edge_data = self.pg.get_edge_data(s_t, s_next, default={})
         
@@ -1131,21 +1129,24 @@ class PGBasedPolicy(Agent):
                     continue
                 for scene_token, scene in city_test_df.groupby('scene_token'):
                         trajectory = self.pg._run_episode(scene,verbose)
-                        scene_nll_action, scene_nll_world = self.compute_scene_nll(trajectory, eps, verbose)
-                        results.append((scene_token, scene_nll_action, scene_nll_world))
+                        scene_nll_action, scene_nll_world,scene_nll_tot = self.compute_scene_nll(trajectory, eps, verbose)
+                        results.append((scene_token, scene_nll_action, scene_nll_world, scene_nll_tot))
         else:
             for scene_token, scene in test_set.groupby('scene_token'):
                     trajectory = self.pg._run_episode(scene,verbose)
-                    scene_nll_action, scene_nll_world = self.compute_scene_nll(trajectory, eps, verbose)
-                    results.append((scene_token, scene_nll_action, scene_nll_world))
+                    scene_nll_action, scene_nll_world,scene_nll_tot = self.compute_scene_nll(trajectory, eps, verbose)
+                    results.append((scene_token, scene_nll_action, scene_nll_world,scene_nll_tot))
 
-        results_df = pd.DataFrame(results, columns=['scene_token', 'nll_a', 'nll_w'])
+        results_df = pd.DataFrame(results, columns=['scene_token', 'nll_a', 'nll_w', 'nll_tot'])
 
         avg_nll_a = results_df['nll_a'].mean()
         std_nll_a = results_df['nll_a'].std()
 
         avg_nll_w = results_df['nll_w'].mean()
-        std_nll_w = results_df['nll_w'].std()
+        std_nll_w = results_df['nll_w'].std()        
+        
+        avg_nll_tot = results_df['nll_tot'].mean()
+        std_nll_tot = results_df['nll_tot'].std()
 
         if verbose:
             print('* END ')
@@ -1156,10 +1157,13 @@ class PGBasedPolicy(Agent):
             print(f"Std Neg-Log-Likelihood for Policy: {std_nll_a:.4f}")
             print(f"Avg Neg-Log-Likelihood for World Model: {avg_nll_w:.4f}")
             print(f"Std Neg-Log-Likelihood for World Model: {std_nll_w:.4f}")
+            print(f"Avg Neg-Log-Likelihood for P(s',a|s): {avg_nll_tot:.4f}")
+            print(f"Std Neg-Log-Likelihood for P(s',a|s): {std_nll_tot:.4f}")
+            #print(f'Total Neg-Log-Likelihood: {}')
 
             
 
-        return avg_nll_a, std_nll_a, avg_nll_w, std_nll_w 
+        return avg_nll_a, std_nll_a, avg_nll_w, std_nll_w, avg_nll_tot, std_nll_tot
 
         
 
