@@ -8,16 +8,23 @@ from pgeon.intention_aware_policy_graph import IntentionAwarePolicyGraph
 
 
 class IntentionIntrospector(object):
-    def __init__(self, desires: Set[Desire]):
+    def __init__(self, desires: Set[Desire], pg:PolicyGraph):
         self.desires = desires
+        self.pg = pg
+        self.intention: Dict[Set[Predicate], Dict[Desire, float]] = {}
+        
+    def __str__(self):
+        return str(self.intention)
 
     def find_intentions(self, pg: PolicyGraph, commitment_threshold: float) \
             -> IntentionAwarePolicyGraph:
         iapg = IntentionAwarePolicyGraph(pg)
-        discretizer = pg.discretizer
-        intention_full_nodes = set()
-        total_results = {k: [] for k in ['intention_probability', 'expected_int_probability']}
+        #discretizer = pg.discretizer
+        #intention_full_nodes = set()
+        #total_results = {k: [self.get_intention_metrics(commitment_threshold, iapg, desire)] for k in ['intention_probability', 'expected_int_probability']}
         self.register_all_desires(pg, self.desires, iapg)
+        total_results = {desire.name: [self.get_intention_metrics(commitment_threshold, iapg, desire)] for desire in self.desires}
+        print(total_results)
         return iapg
 
     def atom_in_state(self, node: Set[Predicate], atom: Predicate):
@@ -60,7 +67,7 @@ class IntentionIntrospector(object):
                             iapg: IntentionAwarePolicyGraph, stop_criterion=1e-4):
         self.update_intention(node, desire, probability, iapg)
         for coincider in pg.predecessors(node):
-            if self.check_desire(pg, coincider, desire.clause, desire.action_idx) is None:
+            if self.check_desire(pg, coincider, desire.clause, desire.action_idx) is None: #TODO: review
                 successors = pg.successors(coincider)
                 coincider_transitions: List[Dict[Set[Predicate], float]] = \
                     [{successor: self.get_prob(pg.get_edge_data(coincider, successor, key=action_id)) for successor in
@@ -95,3 +102,73 @@ class IntentionIntrospector(object):
     def register_all_desires(self, pg: PolicyGraph, desires: Set[Desire], iapg: IntentionAwarePolicyGraph):
         for desire in desires:
             self.register_desire(pg, desire, iapg)
+
+    ###################
+    # Intention metrics
+    ###################
+
+    def get_intention_metrics(self, commitment_threshold:float, iapg: IntentionAwarePolicyGraph, desire: Desire):
+        intention_probability = 0
+        expected_int_probability = 0
+        for node in iapg.pg: 
+            if node in iapg.intention and iapg.intention[node][desire] > commitment_threshold:
+                intention_probability+=iapg.pg.nodes[node]['probability']
+                expected_int_probability+=iapg.intention[node][desire]*iapg.pg.nodes[node]['probability']
+
+        expected_int_probability = expected_int_probability / intention_probability
+        return intention_probability, expected_int_probability
+    
+    ##################
+    # Questions
+    ##################
+    """
+    def question_intention(node:Set[Predicate], commitment_threshold:float):
+        print(f"What do you intend to do in state s?")
+        #all desires with an Id (s) over a certain threshold
+    
+    def question6(self, pg, desire:Desire, node:Set[Predicate]):
+        p = self.check_desire(pg, node, desire.clause, desire.action_idx)
+        if p is not node:
+            pass
+        print(f'How do you plan to fulfill {desire.name} from {node}?')
+    """
+    def check_desired_clause(self, pg: PolicyGraph, node: Set[Predicate], desire_clause: Set[Predicate]):
+        # Returns None if desire clause is not in node. Else, returns probability of state.
+        desire_clause_satisfied = True
+        for atom in desire_clause:
+            desire_clause_satisfied = desire_clause_satisfied and self.atom_in_state(node, atom)
+            if not desire_clause_satisfied:
+                return None
+        return pg.nodes[node]['probability']
+    
+    def question4(self, pg:PolicyGraph, desire: Desire):
+        tot_p = 0
+        for node in pg.nodes:
+            if self.check_desire(pg, node, desire.clause, desire.action_idx) is not None:
+                #p = self.check_desired_clause(pg, node, desire.clause) #TODO:
+                #tot_p+= p if p is not None else 0
+                tot_p+=pg.nodes[node]['probability']
+        print(f"How likely are you to find yourself in a state where you can fulfill your desire {desire.name} by performing the action {desire.action_idx}?")
+        print(f"Probability: {tot_p}")
+     
+
+    def question5(self, pg:PolicyGraph, desire: Desire, action_id: int):
+        """
+            Calculates the probability of performing a desirable action given the state region.
+        """
+        p_sd = 0
+        tot_p = 0
+        weighted_sum = 0
+        for node in pg.nodes:
+            #p = self.check_desired_clause(pg, node, desire.clause) #TODO:
+            #if p is not None:
+            p_ad_given_s = self.check_desire(pg, node, desire.clause, desire.action_idx)
+            if p_ad_given_s is not None:
+                p_sd += pg.nodes[node]['probability']
+                weighted_sum += p_ad_given_s * pg.nodes[node]['probability']
+
+        tot_p = weighted_sum / p_sd
+
+        print(f"How likely are you to perform your desirable action {desire.action_idx} when you are in the state region {desire.clause}?")
+        print(f"Probability: {tot_p}")
+     
