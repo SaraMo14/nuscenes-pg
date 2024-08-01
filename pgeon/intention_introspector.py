@@ -129,6 +129,7 @@ class IntentionIntrospector(object):
         """
         if desire.name != "any":
             intention_full_nodes = [node for node in self.pg.nodes if node in self.intention and desire in self.intention[node] and self.intention[node][desire]>commitment_threshold]
+            print(intention_full_nodes)
             node_probabilities = np.array([self.pg.nodes[node]['probability'] for node in intention_full_nodes])
             intention_probability = np.sum(node_probabilities)
             intention_vals = np.array([self.intention[node][desire] for node in intention_full_nodes])
