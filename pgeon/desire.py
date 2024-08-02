@@ -2,7 +2,7 @@ from typing import Set, Optional, List
 
 from pgeon.discretizer import Predicate
 
-
+'''
 class Desire(object):
     def __init__(self, name: str, action_idx: Optional[int], clause: Set[Predicate]):
         self.name = name
@@ -17,7 +17,7 @@ class Desire(object):
 
 
 Any = Desire("any", None, set())
-
+'''
 
 
 

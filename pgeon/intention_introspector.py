@@ -41,7 +41,7 @@ class IntentionIntrospector(object):
             print(f'Warning: State {node} has no sampled successors which were asked for')
             return 0
 
-    def check_desire(self, node: Set[Predicate], desire_clause: Set[Predicate], action_id: int):
+    def check_desire(self, node: Set[Predicate], desire_clause: Set[Predicate], actions_id: List[int]):
         # Returns None if desire is not satisfied. Else, returns probability of fulfilling desire
         #   ie: executing the action when in Node
         desire_clause_satisfied = True
@@ -49,7 +49,7 @@ class IntentionIntrospector(object):
             desire_clause_satisfied = desire_clause_satisfied and self.atom_in_state(node, atom)
             if not desire_clause_satisfied:
                 return None
-        return self.get_action_probability(node, action_id)
+        return np.sum([self.get_action_probability(node, action_id) for action_id in actions_id])
 
     def update_intention(self, node: Set[Predicate], desire: Desire, probability: float,
                          ):
@@ -63,7 +63,7 @@ class IntentionIntrospector(object):
                             stop_criterion=1e-4):
         self.update_intention(node, desire, probability)
         for coincider in self.pg.predecessors(node):
-            if self.check_desire(coincider, desire.clause, desire.action_idx) is None: #TODO: review
+            if self.check_desire(coincider, desire.clause, desire.actions) is None: #TODO: review
                 successors = self.pg.successors(coincider)
                 coincider_transitions: List[Dict[Set[Predicate], float]] = \
                     [{successor: self.get_prob(self.pg.get_edge_data(coincider, successor, key=action_id)) for successor in
@@ -75,7 +75,7 @@ class IntentionIntrospector(object):
                 coincider_transitions: List[Dict[Set[Predicate], float]] = \
                     [{successor: self.get_prob(self.pg.get_edge_data(coincider, successor, key=action_id)) for successor in
                       successors}
-                     for action_id in self.pg.discretizer.all_actions() if action_id != desire.action_idx]
+                     for action_id in self.pg.discretizer.all_actions() if action_id not in desire.actions]
 
             prob_of_transition = 0
             for action_transitions in coincider_transitions:
@@ -91,7 +91,7 @@ class IntentionIntrospector(object):
 
     def register_desire(self, desire: Desire):
         for node in self.pg.nodes:
-            p = self.check_desire(node, desire.clause, desire.action_idx)
+            p = self.check_desire(node, desire.clause, desire.actions)
             if p is not None:
                 self.propagate_intention(node, desire, p)
 
@@ -102,25 +102,6 @@ class IntentionIntrospector(object):
     ##############################
     # Intention and Desire metrics
     ##############################
-
-    '''
-    def get_intention_metrics(self, commitment_threshold:float, desire: Desire):
-        intention_probability = 0
-        expected_int_probability = 0
-        if desire is not None:
-            for node in self.pg: 
-                if node in self.intention and desire in self.intention[node] and self.intention[node][desire] > commitment_threshold:
-                    intention_probability+=self.pg.nodes[node]['probability']
-                    expected_int_probability+=self.intention[node][desire]*self.pg.nodes[node]['probability']
-        else:
-            
-            intention_probability = sum(np.array([self.pg.nodes[node]['probability'] for node in self.pg.nodes() if node in self.intention and len(self.intention[node])>0]))
-            intention_max_vals = [max(self.intention[node]) for node in self.pg.nodes() if node in self.intention and len(self.intention[node]>0)]
-            expected_int_probability = np.dot(np.array(intention_max_vals), np.array([self.pg.nodes[node]['probability'] for node in self.pg.nodes() if node in self.intention and len(self.intention[node])>0]))\
-                                        / intention_probability                      
-                                            
-        expected_int_probability /= intention_probability
-        return intention_probability, expected_int_probability'''
     
     
     def get_intention_metrics(self, commitment_threshold:float, desire: Desire): #TODO: review S_d
@@ -129,12 +110,10 @@ class IntentionIntrospector(object):
         """
         if desire.name != "any":
             intention_full_nodes = [node for node in self.pg.nodes if node in self.intention and desire in self.intention[node] and self.intention[node][desire]>commitment_threshold]
-            print(intention_full_nodes)
             node_probabilities = np.array([self.pg.nodes[node]['probability'] for node in intention_full_nodes])
             intention_probability = np.sum(node_probabilities)
             intention_vals = np.array([self.intention[node][desire] for node in intention_full_nodes])
             expected_int_probability = np.dot(intention_vals, node_probabilities)/intention_probability #if intention_probability >0 else 0
-        
         else:
             intention_full_nodes = [
                 node for node in self.pg.nodes 
@@ -156,7 +135,7 @@ class IntentionIntrospector(object):
 
     def get_desire_metrics(self, desire):
         desire_prob, expected_action_prob = 0,0
-        desire_nodes = [(node, self.check_desire(node, desire.clause, desire.action_idx)) for node in self.pg.nodes if self.check_desire(node,desire.clause, desire.action_idx) is not None]
+        desire_nodes = [(node, self.check_desire(node, desire.clause, desire.actions)) for node in self.pg.nodes if self.check_desire(node,desire.clause, desire.actions) is not None]
         if desire_nodes:
             node_probabilities = np.array([self.pg.nodes[node]['probability'] for node,_ in desire_nodes])
             desire_prob = np.sum(node_probabilities)
@@ -184,24 +163,20 @@ class IntentionIntrospector(object):
     """
 
     """
-    def check_desired_clause(self, node: Set[Predicate], desire_clause: Set[Predicate]):
-        # Returns None if desire clause is not in node. Else, if state in S_d, returns probability of state P(s).
-        desire_clause_satisfied = True
-        for atom in desire_clause:
-            desire_clause_satisfied = desire_clause_satisfied and self.atom_in_state(node, atom)
-            if not desire_clause_satisfied:
-                return None
-        return self.pg.nodes[node]['probability']
-    """
+   
+    
     def question4(self, desire: Desire):
         print(f"How likely are you to find yourself in a state where you can fulfill your desire {desire.name} by performing the action {desire.action_idx}?")
         print(f"Probability: {self.get_desire_metrics(desire.clause)[0]}")
      
+    """
 
+    '''
     def question5(self, desire: Desire):
         """
         Calculates the probability of performing a desirable action given the state region.
         """
         print(f"How likely are you to perform your desirable action {desire.action_idx} when you are in the state region {desire.clause}?")
         print(f"Probability: {self.get_desire_metrics(desire.clause)[1]}")
-     
+    
+    '''
