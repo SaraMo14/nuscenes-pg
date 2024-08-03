@@ -104,7 +104,7 @@ class IntentionIntrospector(object):
     ##############################
     
     
-    def get_intention_metrics(self, commitment_threshold:float, desire: Desire): #TODO: review S_d
+    def get_intention_metrics(self, commitment_threshold:float, desire: Desire): 
         """
         Computes intention metrics for a specific desire or for any desire.
         """
@@ -150,33 +150,69 @@ class IntentionIntrospector(object):
     ##################
     # Questions
     ##################
+
+
     """
     def question_intention(node:Set[Predicate], commitment_threshold:float):
         print(f"What do you intend to do in state s?")
         #all desires with an Id (s) over a certain threshold
-    
-    def question6(self, pg, desire:Desire, node:Set[Predicate]):
-        p = self.check_desire(pg, node, desire.clause, desire.action_idx)
-        if p is not node:
-            pass
-        print(f'How do you plan to fulfill {desire.name} from {node}?')
     """
 
-    """
+    def question6(self, desire:Desire, state:Set[Predicate]):
+        print(f'How do you plan to fulfill {desire.name} from state {state}?')
+        print(self.how(desire, state)) #TODO: handle case in which desire cannot be fulfilled
+    
+
+
+    def how(self, desire:Desire, state: Set[Predicate]):
+        desire_nodes = [(node, self.check_desire(node, desire.clause, desire.actions)) for node in self.pg.nodes if self.check_desire(node, desire.clause, desire.actions) is not None]
+        for node, _ in desire_nodes:
+            if state == node:
+                return [self.pg.discretizer.get_action_from_id(action) for action in desire.actions ] #desire.actions
+ 
+        intention_vals = [(successor, self.intention[successor][desire]) for successor in self.pg.successors(state) if successor in self.intention and desire in self.intention[successor] ]
+        max_successor = max(intention_vals, key=lambda x: x[1])[0]
+        actions_id = list(self.pg.get_edge_data(state, max_successor).keys())
+        actions = [self.pg.discretizer.get_action_from_id(action) for action in actions_id]  #Given s, there can be 1+ actions that lead to s' 
+        #NOTE: how to decide which action if there are more tha one?
+        subsequent_actions = self.how(desire, max_successor)
+
+        return [actions, max_successor] + subsequent_actions if subsequent_actions else [actions]
+
+
    
     
     def question4(self, desire: Desire):
-        print(f"How likely are you to find yourself in a state where you can fulfill your desire {desire.name} by performing the action {desire.action_idx}?")
+        print(f"How likely are you to find yourself in a state where you can fulfill your desire {desire.name} by performing the action {desire.actions}?")
         print(f"Probability: {self.get_desire_metrics(desire.clause)[0]}")
      
-    """
+    
 
-    '''
+    
     def question5(self, desire: Desire):
         """
         Calculates the probability of performing a desirable action given the state region.
         """
-        print(f"How likely are you to perform your desirable action {desire.action_idx} when you are in the state region {desire.clause}?")
+        print(f"How likely are you to perform your desirable action {desire.actions} when you are in the state region {desire.clause}?")
         print(f"Probability: {self.get_desire_metrics(desire.clause)[1]}")
     
-    '''
+    
+    def question6(self, desire:Desire, state: Set[Predicate]):
+        print(f'How do you plan to fulfill {desire.name} from state {state}?')
+        print(self.how(desire, state))
+        
+    def how(self, desire:Desire, state: Set[Predicate]):
+        desire_nodes = [(node, self.check_desire(node, desire.clause, desire.actions)) for node in self.pg.nodes if self.check_desire(node, desire.clause, desire.actions) is not None]
+
+        for node, _ in desire_nodes:
+            if state == node:
+                return desire.actions   
+            
+        max_intention_vals = np.array([(successor, max(self.intention[successor].values())) for successor in self.pg.successors(state)])
+        max_successor = max(max_intention_vals, key=lambda x: x[1])[0]
+        edge_data = self.pg.get_edge_data(state, max_successor)
+        action = edge_data.get('action')  
+        subsequent_actions = self.how(desire, max_successor)
+
+        return [action] + subsequent_actions if subsequent_actions else [action]
+
