@@ -14,19 +14,19 @@ from table_loader import BaseTableLoader
 
 class CamDataProcessor(BaseTableLoader):
     
-    def __init__(self, dataroot, dataoutput, version):#, complexity):
+    def __init__(self, dataroot, dataoutput, version, complexity):
         super().__init__(dataroot, version)
         
         self.dataroot = dataroot
         self.dataoutput = dataoutput
         self.version = version
-        #self.complexity = complexity
+        self.complexity = complexity
         
-        self.cameras = ['CAM_FRONT_RIGHT', 'CAM_FRONT_LEFT']
-        #if complexity == 1:
-        #    self.cameras = ['CAM_FRONT_RIGHT', 'CAM_FRONT_LEFT']
-        #elif complexity == 2:
-        #    self.cameras = ['CAM_FRONT_RIGHT', 'CAM_FRONT_LEFT', 'CAM_BACK_RIGHT', 'CAM_BACK_LEFT']
+        #self.cameras = ['CAM_FRONT_RIGHT', 'CAM_FRONT_LEFT']
+        if complexity == 0:
+            self.cameras = ['CAM_FRONT']
+        else:# complexity == 2:
+            self.cameras = ['CAM_FRONT_RIGHT', 'CAM_FRONT_LEFT']
         #elif complexity == 3:
         #    self.cameras = ['CAM_FRONT_RIGHT', 'CAM_FRONT_LEFT', 'CAM_BACK_RIGHT', 'CAM_BACK_LEFT', 'CAM_FRONT', 'CAM_BACK']
 
@@ -288,10 +288,10 @@ if __name__ == "__main__":
     parser.add_argument('--dataroot', required=True, type=str, help='Path to the nuScenes dataset directory.')
     parser.add_argument('--dataoutput', required=True, type=str, help='Path for the output data file directory.')
     parser.add_argument('--version', required=True, type=str, choices=["v1.0-mini", "v1.0-trainval"], help='Version of the nuScenes dataset to process.')
-    #parser.add_argument('--complexity', required=True, type=int, default=0, choices=[1, 2, 3], help='Level of complexity of the dataset.')
+    parser.add_argument('--complexity', required=True, type=int, default=0, choices=[0,1], help='Level of complexity of the dataset.')
 
     args = parser.parse_args()
-    processor = CamDataProcessor(args.dataroot, args.dataoutput, args.version) #args.complexity)
+    processor = CamDataProcessor(args.dataroot, args.dataoutput, args.version,args.complexity)
     sample_tokens = pd.DataFrame(processor.sample)['token'].to_frame()
     processor.cam_detection(sample_tokens)
 

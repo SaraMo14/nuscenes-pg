@@ -92,6 +92,9 @@ class FrontRightObjects(Detection):
 class FrontLeftObjects(Detection):
     pass
 
+class FrontObjects(Detection):
+    pass
+
 class PedestrianNearby(Detection):
     pass
 
@@ -139,21 +142,6 @@ class IsStopSignNearby(Enum):
   def __str__(self):
         return f'{self.__class__.__name__}({self.name})'
   
-'''
-class DetectedObject(): #0 or camera_type if any object is present
-    def __init__(self, cam_type=None):
-        self.cam_type = cam_type if cam_type is not None else 0
-
-    def __str__(self) -> str:
-        return f'{self.cam_type}'
-
-    def __eq__(self, other):
-        return self.cam_type == other.cam_type 
-    
-    def __hash__(self):
-        return hash(self.cam_type)
-'''
-
 
 
 class Action(Enum):

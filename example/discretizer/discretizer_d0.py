@@ -1,5 +1,5 @@
 from example.dataset.utils import vector_angle
-from example.discretizer.utils import calculate_object_distance, calculate_velocity_distance, IsTrafficLightNearby,IsZebraNearby, IsStopSignNearby, Detection, FrontLeftObjects, FrontRightObjects, Action, LanePosition, BlockProgress, NextIntersection, Velocity, Rotation
+from example.discretizer.utils import calculate_object_distance, calculate_velocity_distance, IsTrafficLightNearby,IsZebraNearby, IsStopSignNearby, Detection, FrontObjects,FrontLeftObjects, FrontRightObjects, Action, LanePosition, BlockProgress, NextIntersection, Velocity, Rotation
 from example.environment import SelfDrivingEnvironment
 import numpy as np
 from typing import Tuple, Union
@@ -19,9 +19,9 @@ class AVDiscretizer(Discretizer):
         self.environment = environment
         
         id_to_eps = {
-            '0a': 5,
-            '0b': 9,
-            '0c': 11
+            '0a': 5,# 5,
+            '0b': 7, #9,
+            '0c': 9 #11
         }
         self.eps = id_to_eps.get(self.id)
 
@@ -38,12 +38,14 @@ class AVDiscretizer(Discretizer):
         self.state_columns_for_action = ['velocity', 'acceleration', 'steering_angle']     
 
         self.DETECTION_CLASS_MAPPING = {
-        'CAM_FRONT_LEFT': FrontLeftObjects,
-        'CAM_FRONT_RIGHT': FrontRightObjects
+        'CAM_FRONT': FrontObjects
+        #'CAM_FRONT_LEFT': FrontLeftObjects,
+        #'CAM_FRONT_RIGHT': FrontRightObjects
         }
         self.STR_TO_CLASS_MAPPING = {
-            'FrontLeftObjects': FrontLeftObjects,
-            'FrontRightObjects': FrontRightObjects
+            'FrontObjects': FrontObjects
+            #'FrontLeftObjects': FrontLeftObjects,
+            #'FrontRightObjects': FrontRightObjects
         }
     
     @staticmethod
@@ -353,20 +355,11 @@ class AVDiscretizer(Discretizer):
         
             
         # Detection classes
-        front_left_detection_class = self.DETECTION_CLASS_MAPPING.get('CAM_FRONT_LEFT', None)
-        front_right_detection_class = self.DETECTION_CLASS_MAPPING.get('CAM_FRONT_RIGHT', None)
+        front_detection_class = self.DETECTION_CLASS_MAPPING.get('CAM_FRONT', None)
 
-        for right_value in Detection.discretizations[self.obj_discretization]:
-            for left_value in Detection.discretizations[self.obj_discretization]:
-                if [right_value] != detections[0].value or [left_value] != detections[1].value:
-                    similar_detections = [
-                            Predicate(front_right_detection_class, [front_right_detection_class(right_value, self.obj_discretization)]),
-                            Predicate(front_left_detection_class, [front_left_detection_class(left_value, self.obj_discretization)])
-                    ]
-
-                    yield lane_position, next_intersection, velocity, rotation, stop_sign, zebra_crossing, traffic_light, *similar_detections
-
-                    
+        for value in Detection.discretizations[self.obj_discretization]:
+            if [value] != detections[0].value:
+                yield lane_position, lane_position, next_intersection, velocity, rotation, stop_sign, zebra_crossing, traffic_light, Predicate(front_detection_class, [front_detection_class(value, self.obj_discretization)])  
 
         
         for l in LanePosition:
@@ -376,14 +369,14 @@ class AVDiscretizer(Discretizer):
                         for s in IsStopSignNearby:
                             for z in IsZebraNearby:
                                 for t in IsTrafficLightNearby:
-                                    for right_cam in Detection.discretizations[self.obj_discretization]:
-                                        for left_cam in Detection.discretizations[self.obj_discretization]:
-                                            nearby_state =  Predicate(LanePosition, [l]), Predicate(NextIntersection, [n]), Predicate(Velocity, [v]), \
-                                                      Predicate(Rotation, [r]), Predicate(IsStopSignNearby, [s]), Predicate(IsZebraNearby, [z]), \
-                                                        Predicate(IsTrafficLightNearby, [t]), Predicate(FrontRightObjects, [FrontRightObjects(right_cam, self.obj_discretization)]), Predicate(FrontRightObjects, [FrontLeftObjects(left_cam, self.obj_discretization)])
-                                            print(f'distance: {self.distance(state, nearby_state)}')
-                                            if 1 < self.distance(state, nearby_state) < self.eps:
-                                                yield nearby_state
+                                    for cam in Detection.discretizations[self.obj_discretization]:
+                                        nearby_state =  Predicate(LanePosition, [l]), Predicate(NextIntersection, [n]), Predicate(Velocity, [v]), \
+                                                                Predicate(Rotation, [r]), Predicate(IsStopSignNearby, [s]), Predicate(IsZebraNearby, [z]), \
+                                                                Predicate(IsTrafficLightNearby, [t]), Predicate(FrontObjects, [FrontObjects(cam, self.obj_discretization)])#,\
+                                                                #Predicate(FrontRightObjects, [FrontLeftObjects(left_cam, self.obj_discretization)])
+                                        #print(f'Distance: {self.distance(state, nearby_state)}')
+                                        if 1 < self.distance(state, nearby_state) < self.eps:
+                                            yield nearby_state
     
     
     
@@ -395,11 +388,13 @@ class AVDiscretizer(Discretizer):
         n_lane_position, n_next_intersection, n_velocity, n_rotation, n_stop_sign, n_zebra_crossing, n_traffic_light, *n_detections = nearby_pred
 
         if self.obj_discretization == 'binary':
-            left_obj_distance = int(o_detections[1].value != n_detections[1].value)
-            right_obj_distance = int(o_detections[0].value != n_detections[0].value)
+            obj_distance = int(o_detections[0].value != n_detections[0].value)
+            #left_obj_distance = int(o_detections[1].value != n_detections[1].value)
+            #right_obj_distance = int(o_detections[0].value != n_detections[0].value)
         else:
-            left_obj_distance = calculate_object_distance(o_detections[1].value[0].count, n_detections[1].value[0].count)
-            right_obj_distance = calculate_object_distance(o_detections[0].value[0].count, n_detections[0].value[0].count)
+            obj_distance = calculate_object_distance(o_detections[0].value[0].count, n_detections[0].value[0].count)
+            #left_obj_distance = calculate_object_distance(o_detections[1].value[0].count, n_detections[1].value[0].count)
+            #right_obj_distance = calculate_object_distance(o_detections[0].value[0].count, n_detections[0].value[0].count)
 
         if self.vel_discretization == 'binary':
             vel_distance =  int(o_velocity.value != n_velocity.value)
@@ -410,8 +405,7 @@ class AVDiscretizer(Discretizer):
                 int(o_lane_position.value != n_lane_position.value) + int(o_next_intersection.value!= n_next_intersection.value) \
                     + int(o_stop_sign.value != n_stop_sign.value) + int( o_zebra_crossing.value != n_zebra_crossing.value)  \
                     + int(o_traffic_light.value != n_traffic_light.value) + vel_distance  \
-                    + int(o_rotation.value !=n_rotation.value) +  right_obj_distance \
-                    + left_obj_distance
+                    + int(o_rotation.value !=n_rotation.value) +  obj_distance #right_obj_distance + left_obj_distance
         return distance                      
 
     
@@ -421,6 +415,7 @@ class AVDiscretizer(Discretizer):
     def all_actions(self):
         return list(Action) 
         
+    #TODO: test
     def get_predicate_space(self):
         all_tuples = []
         for l in LanePosition:
@@ -430,8 +425,9 @@ class AVDiscretizer(Discretizer):
                         for s in IsStopSignNearby:
                             for z in IsZebraNearby:
                                 for t in IsTrafficLightNearby:
-                                    for right_cam in Detection.discretizations[self.obj_discretization]:
-                                        for left_cam in Detection.discretizations[self.obj_discretization]:
-                                            all_tuples.append((l,n,v,r,s,z,t,right_cam, left_cam))
+                                    for cam in Detection.discretization[self.obj_discretization]:
+                                    #for right_cam in Detection.discretizations[self.obj_discretization]:
+                                        #for left_cam in Detection.discretizations[self.obj_discretization]:
+                                            all_tuples.append((l,n,v,r,s,z,t,cam))#right_cam, left_cam))
         return all_tuples
 
