@@ -6,6 +6,7 @@ from example.discretizer.discretizer_d0 import AVDiscretizer
 from example.discretizer.discretizer_d1 import AVDiscretizerD1
 import csv
 import os
+import networkx as nx
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -51,8 +52,6 @@ if __name__ == '__main__':
     #load PG-based agent
     pg = PG.PolicyGraph.from_nodes_and_edges(nodes_path, edges_path, environment, discretizer)
 
-
-
     ##################
     # static metrics
     ##################
@@ -76,5 +75,5 @@ if __name__ == '__main__':
     
     print(f'Successfully evaluated Policy Graph with {len(pg.nodes)} nodes and {len(pg.edges)} edges.')
     
-# python3 po_metrics.py --pg_id pg_trainval_Cb_D0 python3 pg_metrics.py --pg_id PG_trainval_Call_D0c_Wall_Tall
+#python3 pg_metrics.py --pg_id PG_trainval_Call_D0c_Wall_Tall
 

@@ -24,6 +24,38 @@ class IntentionIntrospector(object):
 
     def atom_in_state(self, node: Set[Predicate], atom: Predicate):
         return atom in node
+    '''
+    @staticmethod
+    def check_state_condition(node, atom, condition_values):
+        """
+        Given a state (node) of predicates, checks if its predicates have the values in the condition.
+        """
+        for elem in node:
+            if elem.predicate == atom and elem.value[0] in condition_values:
+                return True
+        return False
+
+    def check_desire(self, node: Set[Predicate], desire_clause: Dict[str, Set[str]], actions_id:List[int]) -> bool:
+        # Returns None if desire is not satisfied. Else, returns probability of fulfilling desire
+        #   ie: executing the action when in Node
+        desire_clause_satisfied = True
+        for atom, condition_values in desire_clause.items():
+            desire_clause_satisfied = desire_clause_satisfied and self.check_state_condition(node, atom, condition_values)
+            if not desire_clause_satisfied:
+                return None
+        return np.sum([self.get_action_probability(node, action_id) for action_id in actions_id])
+
+    '''
+    def check_desire(self, node: Set[Predicate], desire_clause: Set[Predicate], actions_id: List[int]):
+        # Returns None if desire is not satisfied. Else, returns probability of fulfilling desire
+        #   ie: executing the action when in Node
+        desire_clause_satisfied = True
+        for atom in desire_clause:
+            desire_clause_satisfied = desire_clause_satisfied and self.atom_in_state(node, atom)
+            if not desire_clause_satisfied:
+                return None
+        return np.sum([self.get_action_probability(node, action_id) for action_id in actions_id])
+
 
     @staticmethod
     def get_prob(unknown_dict: Optional[Dict[str, object]]):
@@ -41,16 +73,7 @@ class IntentionIntrospector(object):
             print(f'Warning: State {node} has no sampled successors which were asked for')
             return 0
 
-    def check_desire(self, node: Set[Predicate], desire_clause: Set[Predicate], actions_id: List[int]):
-        # Returns None if desire is not satisfied. Else, returns probability of fulfilling desire
-        #   ie: executing the action when in Node
-        desire_clause_satisfied = True
-        for atom in desire_clause:
-            desire_clause_satisfied = desire_clause_satisfied and self.atom_in_state(node, atom)
-            if not desire_clause_satisfied:
-                return None
-        return np.sum([self.get_action_probability(node, action_id) for action_id in actions_id])
-
+    
     def update_intention(self, node: Set[Predicate], desire: Desire, probability: float,
                          ):
         if node not in self.intention:

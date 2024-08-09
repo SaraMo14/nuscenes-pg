@@ -5,6 +5,7 @@ from example.environment import SelfDrivingEnvironment
 from example.discretizer.discretizer_d0 import AVDiscretizer
 from example.discretizer.discretizer_d1 import AVDiscretizerD1
 import pandas as pd
+import networkx as nx
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -112,6 +113,12 @@ if __name__ == '__main__':
             #pg.environment = city_environment
             city_df = df[df['location'] == city]
             pg = pg.fit(city_df, update=True, verbose=verbose)
+
+    #remove uninformative scenes (weakly cc of size 1)
+    weakly_connected_components = list(nx.weakly_connected_components(pg))
+    for component in weakly_connected_components:
+        if len(component) == 1:
+            pg.remove_node(next(iter(component))) 
 
            
     split = 'mini' if 'mini' in data_file else 'trainval'
