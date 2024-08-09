@@ -24,7 +24,7 @@ class IntentionIntrospector(object):
 
     def atom_in_state(self, node: Set[Predicate], atom: Predicate):
         return atom in node
-    '''
+    
     @staticmethod
     def check_state_condition(node, atom, condition_values):
         """
@@ -55,7 +55,7 @@ class IntentionIntrospector(object):
             if not desire_clause_satisfied:
                 return None
         return np.sum([self.get_action_probability(node, action_id) for action_id in actions_id])
-
+    '''
 
     @staticmethod
     def get_prob(unknown_dict: Optional[Dict[str, object]]):
