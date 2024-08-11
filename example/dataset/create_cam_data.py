@@ -11,6 +11,10 @@ import numpy as np
 from nuscenes.utils.data_classes import Box
 from nuscenes.utils.geometry_utils import box_in_image
 from table_loader import BaseTableLoader
+import matplotlib.pyplot as plt
+import os.path as osp
+from PIL import Image
+
 
 class CamDataProcessor(BaseTableLoader):
     
@@ -22,7 +26,6 @@ class CamDataProcessor(BaseTableLoader):
         self.version = version
         self.complexity = complexity
         
-        #self.cameras = ['CAM_FRONT_RIGHT', 'CAM_FRONT_LEFT']
         if complexity == 0:
             self.cameras = ['CAM_FRONT']
         else:# complexity == 2:
@@ -93,6 +96,9 @@ class CamDataProcessor(BaseTableLoader):
                                 selected_anntokens=[ann_token]
                             )
                             if boxes:
+                                #filter objects within a radius.
+                                #boxes
+
                                 if ann_info['attribute_tokens']:#only vehicles, cyclists and pedestrians have attributes
                                     for attribute in ann_info['attribute_tokens']: #an annotation can have more than one attribute in time (e.g. pedestrian moving/not moving)
                                         attribute_name = self.get('attribute', attribute)['name']
@@ -117,29 +123,6 @@ class CamDataProcessor(BaseTableLoader):
         df_detected_objects.to_csv(output_path, index=False)
         print(f"Camera detection data saved to {output_path}")
         
-
-
-
-    '''
-    @property
-    def table_root(self) -> str:
-        """ Returns the folder where the tables are stored for the relevant version. """
-        return osp.join(self.dataroot, self.version)
-
-    def __load_table__(self, table_name, drop_fields=None) -> dict:
-        
-        """ Loads a table. """
-        with open(osp.join(self.table_root, '{}.json'.format(table_name))) as f:
-            table = json.load(f)
-        
-        # Drop specified fields
-        drop_fields = drop_fields or []
-        if drop_fields:
-            for record in table:
-                for field in drop_fields:
-                    record.pop(field, None)
-        return table
-    '''
 
     def get(self, table_name: str, token: str) -> dict:
         """
@@ -213,7 +196,8 @@ class CamDataProcessor(BaseTableLoader):
     def get_sample_data(self, sample_data_token: str,
                         box_vis_level: BoxVisibility = BoxVisibility.ANY,
                         selected_anntokens: List[str] = None,
-                        use_flat_vehicle_coordinates: bool = False) -> List[Box]:
+                        use_flat_vehicle_coordinates: bool = False, 
+                        radius = 15) -> List[Box]:
         """
         Returns the data path as well as all annotations related to that sample_data.
         Note that the boxes are transformed into the current sensor's coordinate frame.
@@ -222,6 +206,7 @@ class CamDataProcessor(BaseTableLoader):
         :param selected_anntokens: If provided only return the selected annotation.
         :param use_flat_vehicle_coordinates: Instead of the current sensor's coordinate frame, use ego frame which is
                                              aligned to z-plane in the world.
+        :param radius: if specified, the funcion returns all boxes that are far at most <radius> from the ego vehicle.
         :return: (data_path, boxes, camera_intrinsic <np.array: 3, 3>)
         """
 
@@ -248,26 +233,47 @@ class CamDataProcessor(BaseTableLoader):
 
         # Make list of Box objects including coord system transforms.
         box_list = []
-        for box in boxes:
-            if use_flat_vehicle_coordinates:
-                # Move box to ego vehicle coord system parallel to world z plane.
-                yaw = Quaternion(pose_record['rotation']).yaw_pitch_roll[0]
-                box.translate(-np.array(pose_record['translation']))
-                box.rotate(Quaternion(scalar=np.cos(yaw / 2), vector=[0, 0, np.sin(yaw / 2)]).inverse)
-            else:
-                # Move box to ego vehicle coord system.
-                box.translate(-np.array(pose_record['translation']))
-                box.rotate(Quaternion(pose_record['rotation']).inverse)
 
-                #  Move box to sensor coord system.
-                box.translate(-np.array(cs_record['translation']))
-                box.rotate(Quaternion(cs_record['rotation']).inverse)
 
-            if sensor_record['modality'] == 'camera' and not \
-                    box_in_image(box, cam_intrinsic, imsize, vis_level=box_vis_level):
-                continue
 
-            box_list.append(box)
+        #####à
+        #fig, ax = plt.subplots(1, 1, figsize=(9, 9))
+        #sd_record = self.get('sample_data', sample_data_token)
+        #data_path = osp.join(self.dataroot, sd_record['filename'])
+        #im = Image.open(data_path)
+        #ax.imshow(im)
+
+        ########
+
+        for box in boxes:      
+            
+            distance = self.distance_ego_to_object(pose_record['translation'], box)# np.linalg.norm(np.array(pose_record['translation']-np.array(box.center)))
+            if distance < radius:
+                if use_flat_vehicle_coordinates:
+                    # Move box to ego vehicle coord system parallel to world z plane.
+                    yaw = Quaternion(pose_record['rotation']).yaw_pitch_roll[0]
+                    box.translate(-np.array(pose_record['translation']))
+                    box.rotate(Quaternion(scalar=np.cos(yaw / 2), vector=[0, 0, np.sin(yaw / 2)]).inverse)
+                else:
+                    # Move box to ego vehicle coord system.
+                    box.translate(-np.array(pose_record['translation']))
+                    box.rotate(Quaternion(pose_record['rotation']).inverse)
+
+                    #  Move box to sensor coord system.
+                    box.translate(-np.array(cs_record['translation']))
+                    box.rotate(Quaternion(cs_record['rotation']).inverse)
+
+                if sensor_record['modality'] == 'camera' and not \
+                        box_in_image(box, cam_intrinsic, imsize, vis_level=box_vis_level):
+                    continue
+                
+                ##### 
+                #box.render(ax, view=cam_intrinsic, normalize=True, colors=('r','r','r'))
+                ####à
+                box_list.append(box)
+        
+        #ax.axis('off')
+        #plt.savefig(f'ann{time.time()}.png')
 
         return  box_list
 
@@ -281,7 +287,19 @@ class CamDataProcessor(BaseTableLoader):
         return Box(record['translation'], record['size'], Quaternion(record['rotation']),
                    name=record['category_name'], token=record['token'])
 
+    @staticmethod
+    def distance_ego_to_object(ego_position, box):
+        """
+        Compute the distance from the ego vehicle to the closest part of the detected object.
 
+        :param ego_position: A tuple (x, y, z) representing the position of the ego vehicle.
+        :param box: A Box object representing the detected object.
+        :return: The minimum distance from the ego vehicle to the closest point on the object.
+        
+        """
+        corners = box.bottom_corners()
+        distances = np.linalg.norm(corners.T - np.array(ego_position), axis = 1)
+        return np.min(distances)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process nuScenes camera data and save to a file.")

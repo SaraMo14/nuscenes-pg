@@ -189,7 +189,7 @@ class PolicyGraph(nx.MultiDiGraph):
                 List containing tuples of (current state ID, action ID, next state ID).
         """
         #self.discretizer.detection_cameras = [col for col in scene.columns if 'CAM' in col] 
-        self.discretizer.detection_cameras = [col for col in scene.columns if 'CAM_FRONT_LEFT' in col or 'CAM_FRONT_RIGHT' in col]
+        self.discretizer.detection_cameras = [col for col in scene.columns if 'CAM_FRONT' in col ]#'CAM_FRONT_RIGHT' in col or 'CAM_FRONT_RIGHT' in col]
         trajectory = []
         in_intersection = False
         intersection_info = []

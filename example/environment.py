@@ -265,9 +265,9 @@ class SelfDrivingEnvironment(Environment):
                         #print(f'A sign is intersecting: {stop_line}')
 
                         if stop_line['road_block_token'] == current_road_block or current_road_block == '': #or intersection
-                                return True
+                                return stop_line['stop_line_type']
                 
-        return False
+        return None
 
 
 
