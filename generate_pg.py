@@ -72,11 +72,10 @@ if __name__ == '__main__':
     #set discretizer
     discretizer_configs = {
     'a': {'obj_discretizer': 'binary', 'vel_discretizer': 'binary' },
-    'b': {'obj_discretizer': 'multiple', 'vel_discretizer': 'binary'},
-    'c': {'obj_discretizer': 'multiple', 'vel_discretizer': 'multiple'}
+    'b': {'obj_discretizer': 'binary', 'vel_discretizer': 'multiple' }
     }
 
-    default_config = {'obj_discretizer': 'multiple', 'vel_discretizer': 'multiple'}
+    default_config = {'obj_discretizer': 'binary', 'vel_discretizer': 'binary'}
 
     config = default_config
     for key in discretizer_configs:
@@ -124,11 +123,10 @@ if __name__ == '__main__':
     split = 'mini' if 'mini' in data_file else 'trainval'
 
     if output_format == 'csv':
-        #split = 'hv_20_'
         nodes_path = f'example/dataset/data/policy_graphs/PG_{split}_C{city_id}_D{discretizer_id}_W{weather}_T{tod}_nodes.{output_format}'
         edges_path = f'example/dataset/data/policy_graphs/PG_{split}_C{city_id}_D{discretizer_id}_W{weather}_T{tod}_edges.{output_format}'
-        traj_path = f'example/dataset/data/policy_graphs/PG_{split}_C{city_id}_D{discretizer_id}_W{weather}_T{tod}_traj.{output_format}'
-        pg.save(output_format, [nodes_path, edges_path, traj_path])
+        #traj_path = f'example/dataset/data/policy_graphs/PG_{split}_C{city_id}_D{discretizer_id}_W{weather}_T{tod}_traj.{output_format}' #NOTE: handle case in which we delete wcc
+        pg.save(output_format, [nodes_path, edges_path ])#, traj_path])
     else:
         pg.save(output_format, f'example/dataset/data/policy_graphs/pg_{split}_C{city_id}_D{discretizer_id}.{output_format}')
 
