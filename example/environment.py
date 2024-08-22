@@ -22,8 +22,6 @@ class SelfDrivingEnvironment(Environment):
             self.nusc_map = NuScenesMap(dataroot=dataroot, map_name = city)
             self.dividers = getattr(self.nusc_map, 'road_divider') + getattr(self.nusc_map, 'lane_divider')
 
-        #self.current_state = None
-
     
     def reset(self):
         pass
@@ -97,7 +95,6 @@ class SelfDrivingEnvironment(Environment):
 
         explorer = NuScenesMapExplorer(self.nusc_map) #TODO: initialize in init()?
 
-        # Settings
         patch_margin = 2
         min_diff_patch = 30
 
@@ -259,11 +256,9 @@ class SelfDrivingEnvironment(Environment):
         current_road_block = self.nusc_map.record_on_point(x,y, 'road_block')
 
         for stop_line in self.nusc_map.stop_line:
-            if stop_line['stop_line_type'] in ['STOP_SIGN','YIELD']:
+            if stop_line['stop_line_type'] in ['STOP_SIGN','YIELD']: #,'TURN_STOP']:
                     stop_line_polygon = self.nusc_map.extract_polygon(stop_line['polygon_token'])                
                     if stop_line_polygon.intersects(front_area):
-                        #print(f'A sign is intersecting: {stop_line}')
-
                         if stop_line['road_block_token'] == current_road_block or current_road_block == '': #or intersection
                                 return stop_line['stop_line_type']
                 
@@ -285,7 +280,6 @@ class SelfDrivingEnvironment(Environment):
         for ped_crossing in self.nusc_map.ped_crossing:  
             ped_crossing_polygon = self.nusc_map.extract_polygon(ped_crossing['polygon_token'])
             if ped_crossing_polygon.intersects(front_area):
-                #print('Zebra crossing nearby')
                 return True
 
         for stop_line in self.nusc_map.stop_line:
@@ -293,7 +287,6 @@ class SelfDrivingEnvironment(Environment):
                     stop_line_polygon = self.nusc_map.extract_polygon(stop_line['polygon_token'])
                     if stop_line_polygon.intersects(front_area):
                         if stop_line['ped_crossing_tokens']:
-                            #print('Zebra crossing neaby (turn stop)')
                             return True 
                         else:
                             print('Turn stop without zebra crossing. To be handled.)') #TODO:
@@ -321,9 +314,7 @@ class SelfDrivingEnvironment(Environment):
                 if point.within(front_area):
                     traffic_light_direction = (xs[1] - xs[0], ys[1] - ys[0])   
                     alignment = determine_travel_alignment(traffic_light_direction, yaw)
-                    #print(f'traffic light alignmenet {alignment}')
                     if alignment <-eps:
-                         #print('valid traffic light')
                         return True
         
         for stop_line in self.nusc_map.stop_line:
@@ -336,9 +327,7 @@ class SelfDrivingEnvironment(Environment):
                                 xs, ys = line.xy                              
                                 traffic_light_direction = (xs[1] - xs[0], ys[1] - ys[0])   
                                 alignment = determine_travel_alignment(traffic_light_direction, yaw)
-                                #print(f'traffic light alignmenet {alignment}')
                                 if alignment <-eps:
-                                    #print('valid traffic light stop line')
                                     return True
 
         return False
@@ -399,10 +388,14 @@ class SelfDrivingEnvironment(Environment):
 
 
     def get_position_predicates(self,x,y, yaw, eps=0.3, agent_size:Tuple[float, float]=(2,4)):
+        
         """
         Determines the lane progress (which chunk the distance along the lane falls into). The lane is divided into 3 equal chunks.
-        Determines the lane position (Left if on the left lane of the road, RIGHT is right and Center if in the center.)
-        
+        Determines the lane position:
+        - Aligned if the vehicle is on a lane with its same direction of travel,
+        - Opposite if the vehicle is on a lane with opposite direction of travel,
+        - Center if the vehicle is on a lane or road divider.
+
              
         :return: (BlockProgress, LanePosition)
         """
@@ -425,11 +418,6 @@ class SelfDrivingEnvironment(Environment):
                 lane_path = self.nusc_map.get_arcline_path(closest_lane)
                 closest_pose_idx_to_lane, lane_record, _ = SelfDrivingEnvironment.project_pose_to_lane((x, y, yaw), lane_path)
 
-                #if closest_pose_idx_to_lane == len(lane_record) - 1:
-                #    direction_vector = lane_record[closest_pose_idx_to_lane] - lane_record[closest_pose_idx_to_lane - 1]
-                #else:
-                #    direction_vector = lane_record[closest_pose_idx_to_lane + 1] - lane_record[closest_pose_idx_to_lane]
-
                 if closest_pose_idx_to_lane == len(lane_record) - 1:
                     direction_vector = lane_record[closest_pose_idx_to_lane] - lane_record[closest_pose_idx_to_lane - 2]
                 
@@ -443,9 +431,9 @@ class SelfDrivingEnvironment(Environment):
                 direction_of_travel = determine_travel_alignment(direction_vector, yaw)
 
                 if direction_of_travel <-eps:
-                    return(BlockProgress.INTERSECTION, LanePosition.LEFT)
+                    return(BlockProgress.INTERSECTION, LanePosition.OPPOSITE)
                 elif direction_of_travel>eps:
-                    return(BlockProgress.INTERSECTION,LanePosition.RIGHT)
+                    return(BlockProgress.INTERSECTION,LanePosition.ALIGNED)
                 else:
                     return(BlockProgress.INTERSECTION,LanePosition.NONE) 
                     
@@ -473,11 +461,6 @@ class SelfDrivingEnvironment(Environment):
         if self.is_on_divider(x,y, yaw, agent_size):
             lane_position = LanePosition.CENTER
         else:
-            #if closest_pose_idx_to_lane == len(lane_record) - 1:
-            #    direction_vector = lane_record[closest_pose_idx_to_lane] - lane_record[closest_pose_idx_to_lane - 1]
-            #else:
-            #    direction_vector = lane_record[closest_pose_idx_to_lane + 1] - lane_record[closest_pose_idx_to_lane]
-
             if closest_pose_idx_to_lane == len(lane_record) - 1:
                 direction_vector = lane_record[closest_pose_idx_to_lane] - lane_record[closest_pose_idx_to_lane - 2]
             
@@ -490,9 +473,9 @@ class SelfDrivingEnvironment(Environment):
             direction_of_travel = determine_travel_alignment(direction_vector, yaw)
                     
             if direction_of_travel <-eps:
-                lane_position = LanePosition.LEFT
+                lane_position = LanePosition.OPPOSITE
             elif direction_of_travel>eps:
-                lane_position = LanePosition.RIGHT
+                lane_position = LanePosition.ALIGNED
             else: 
                 lane_position = LanePosition.NONE 
                 #NOTE: direction vector close to zero, meaning that 1) 2 points in the arcline path are very close or 2) that the closest lane to the vehicle at 
@@ -533,9 +516,9 @@ class SelfDrivingEnvironment(Environment):
         direction_of_travel = determine_travel_alignment(direction_vector, yaw)
 
         if direction_of_travel < -eps:
-            lane_position = LanePosition.LEFT
+            lane_position = LanePosition.OPPOSITE
         elif direction_of_travel > eps:
-            lane_position = LanePosition.RIGHT
+            lane_position = LanePosition.ALIGNED
         else:
             lane_position = LanePosition.NONE
 
@@ -549,7 +532,7 @@ class SelfDrivingEnvironment(Environment):
     def is_vulnerable_subject_nearby(state_detections):
 
         """
-        Function to check for vulnerable subjects nearby based on state detections from all cameras.
+        Function to check for vulnerable subjects nearby based on state detections from all cameras specified in state_detections.
         Vulnerable subjects include pedestrians, cyclists and people driving scooters.
         
         Parameters:
