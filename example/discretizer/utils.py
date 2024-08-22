@@ -24,8 +24,8 @@ class Rotation(Enum):
 
 class LanePosition(Enum):
     LEFT = auto()
-    CENTER = auto()
-    RIGHT = auto()
+    ALIGNED = auto()
+    OPPOSITE = auto()
     NONE = auto() #for all the cases not includend in the previous categories (e.g car headed perpendicular to the road, parkins, etc..)
     #TODO: handle intersections    
     def __str__(self):
@@ -99,14 +99,6 @@ class PedestrianNearby(Detection):
     pass
 
 
-#class IsPedestrianNearby(Enum):
-#    YES = auto()
-#    NO = auto()
-    
-#    def __str__(self):
-#            return f'{self.__class__.__name__}({self.name})'
-
-
 class IsTwoWheelNearby(Enum): #bycicles + scooters
     YES = auto()
     NO = auto()
@@ -143,6 +135,15 @@ class IsStopSignNearby(Enum):
         return f'{self.__class__.__name__}({self.name})'
   
 
+class SignNearby(Enum): 
+  #includes Stop Sign and Yield Sign
+  STOP = auto()
+  YIELD = auto()
+  NO = auto()
+  
+  def __str__(self):
+        return f'{self.__class__.__name__}({self.name})'
+
 
 class Action(Enum):
   IDLE = auto() 
@@ -150,7 +151,6 @@ class Action(Enum):
   TURN_RIGHT = auto()
   GAS = auto() 
   BRAKE = auto()
-  #REVERSE = auto()
   STRAIGHT = auto() #car keep going straight at same pace
   GAS_TURN_RIGHT= auto()
   GAS_TURN_LEFT= auto()
@@ -222,45 +222,5 @@ def calculate_velocity_distance(value1, value2):
             elif value2 == Velocity.MEDIUM:
                 return 1
         return 0  
-
-def get_weight_assigned_color(weight):
-    """
-    Returns the color that represents the given weight
-    """
-    if weight >= 0.75:
-        return '#332FD0'
-    if weight >= 0.5:
-        return '#9254C8'
-    if weight >= 0.25:
-        return '#E15FED'
-    else:
-        return '#6EDCD9'
-    
-def get_assigned_color(action_num):
-    """
-    Returns the color assigned to the action (int).
-    """
-    if action_num == 1:
-        return '4D96FF'
-    elif action_num == 2:
-        return '6BCB77'
-    elif action_num == 3:
-        return 'FFD93D'
-    elif action_num == 4:
-        return '525E75'
-    elif action_num == 5:
-        return 'FF7BA9'
-    if action_num == 6:
-        return "FF6B6B"
-    elif action_num == 7:
-        return "FF6B6B"
-    elif action_num == 8:
-        return "FF6B6B"
-    elif action_num == 9:
-        return "FF6B6B"
-    elif action_num == 10:
-        return "FF6B6B"
-
-    #TODO: update
 
 
