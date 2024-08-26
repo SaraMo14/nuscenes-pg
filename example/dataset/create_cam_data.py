@@ -18,21 +18,17 @@ from PIL import Image
 
 class CamDataProcessor(BaseTableLoader):
     
-    def __init__(self, dataroot, dataoutput, version, complexity):
+    def __init__(self, dataroot, dataoutput, version, alpha):#, complexity):
         super().__init__(dataroot, version)
         
         self.dataroot = dataroot
         self.dataoutput = dataoutput
         self.version = version
-        self.complexity = complexity
+        self.alpha = alpha
+        #self.complexity = complexity
         
-        if complexity == 0:
-            self.cameras = ['CAM_FRONT']
-        else:# complexity == 2:
-            self.cameras = ['CAM_FRONT_RIGHT', 'CAM_FRONT_LEFT']
-        #elif complexity == 3:
-        #    self.cameras = ['CAM_FRONT_RIGHT', 'CAM_FRONT_LEFT', 'CAM_BACK_RIGHT', 'CAM_BACK_LEFT', 'CAM_FRONT', 'CAM_BACK']
-
+        self.cameras = ['CAM_FRONT']
+        
         self.table_names = ['attribute','ego_pose','sensor', 'category', 'visibility','calibrated_sensor','sample_data', 'instance','sample', 'sample_annotation']
 
       
@@ -47,16 +43,17 @@ class CamDataProcessor(BaseTableLoader):
         print('calibrated_sensor loaded')
         self.sensor = self.__load_table__('sensor')
         print('sensor loaded')
-        self.attribute = self.__load_table__('attribute')
+        self.attribute = self.__load_table__('attribute', drop_fields=['description'])
         print('attribute loaded')
         self.instance = self.__load_table__('instance')
         print('instance loaded')
-        self.visibility = self.__load_table__('visibility')
+        self.visibility = self.__load_table__('visibility', drop_fields=['description'])
         print('visibility loaded')
-        self.category = self.__load_table__('category')
+        self.category = self.__load_table__('category', drop_fields=['description', 'index'])
         print('category loaded')
         self.sample_annotation = self.__load_table__('sample_annotation', drop_fields=['prev','next','num_lidar_pts', 'num_radar_pts'])
         print('sample_annotation loaded')
+        
         self.sample = self.__load_table__('sample')
         print('sample loaded')
         self.__make_reverse_index__(verbose=True)
@@ -78,27 +75,35 @@ class CamDataProcessor(BaseTableLoader):
         For each annotation, check from which camera it is from.
 
         """
-        #detected_objects = []
         for sample_token in sample_tokens['token']:
             sample = self.get('sample', sample_token)
             sample_detected_objects = {cam_type: {} for cam_type in self.cameras}
             
             if sample.get('anns'): #if sample has annotated objects
+                #####à
+                #fig, ax = plt.subplots(1, 1, figsize=(9, 9))
+                #sd_record = self.get('sample_data', sample['data']['CAM_FRONT'])
+                #data_path = osp.join(self.dataroot, sd_record['filename'])
+                #im = Image.open(data_path)
+                #ax.imshow(im)
+                ########
+
+
                 for ann_token in sample['anns']:
                     ann_info = self.get('sample_annotation', ann_token)
                     visibility = int(self.get('visibility', ann_info['visibility_token'])['token'])
-                    if visibility >=2:
+                    if visibility >=3:
                         category = ann_info['category_name']
                         for cam_type in self.cameras:
-                            boxes = self.get_sample_data(
+                            box = self.get_sample_data(
                                 sample['data'][cam_type], 
-                                box_vis_level=BoxVisibility.ANY, 
-                                selected_anntokens=[ann_token]
+                                box_vis_level=BoxVisibility.ANY,
+                                selected_anntoken=ann_token
                             )
-                            if boxes:
-                                #filter objects within a radius.
-                                #boxes
-
+                            if box:
+                                #filter objects within a distance alpha.
+                                #box.render(ax, view= np.array(self.get('calibrated_sensor', sd_record['calibrated_sensor_token'])['camera_intrinsic']), normalize=True, colors=('r','r','r'))
+                                        
                                 if ann_info['attribute_tokens']:#only vehicles, cyclists and pedestrians have attributes
                                     for attribute in ann_info['attribute_tokens']: #an annotation can have more than one attribute in time (e.g. pedestrian moving/not moving)
                                         attribute_name = self.get('attribute', attribute)['name']
@@ -111,16 +116,21 @@ class CamDataProcessor(BaseTableLoader):
                                     if key not in sample_detected_objects[cam_type]:
                                         sample_detected_objects[cam_type][key] = 0
                                     sample_detected_objects[cam_type][key] += 1
-                                
+                
+                #ax.axis('off')
+                #if sample_token == '31812a5e8d514b5f8d2fbc50fc007475':
+                    #plt.title(sample_token)
+                    #plt.tight_layout()
+                    #plt.savefig(f'{sample_token}_{self.alpha}.png')
+               
             for cam_type in self.cameras:
                 sample_tokens.loc[sample_tokens['token'] == sample_token, f'{cam_type}'] = str(sample_detected_objects[cam_type])
 
         
         df_detected_objects = pd.DataFrame(sample_tokens).rename(columns={'token': 'sample_token'})#, columns=['sample_token', 'detected_objects'])
         output_path = Path(self.dataoutput) / 'cam_detection.csv'
-        #output_path = Path(self.dataoutput) / f'cam_detection_{args.version}_{args.complexity}.csv'
-
         df_detected_objects.to_csv(output_path, index=False)
+
         print(f"Camera detection data saved to {output_path}")
         
 
@@ -195,18 +205,17 @@ class CamDataProcessor(BaseTableLoader):
     
     def get_sample_data(self, sample_data_token: str,
                         box_vis_level: BoxVisibility = BoxVisibility.ANY,
-                        selected_anntokens: List[str] = None,
-                        use_flat_vehicle_coordinates: bool = False, 
-                        radius = 15) -> List[Box]:
+                        selected_anntoken: str = None,
+                        use_flat_vehicle_coordinates: bool = False) -> Box:
         """
         Returns the data path as well as all annotations related to that sample_data.
         Note that the boxes are transformed into the current sensor's coordinate frame.
         :param sample_data_token: Sample_data token.
         :param box_vis_level: If sample_data is an image, this sets required visibility for boxes.
-        :param selected_anntokens: If provided only return the selected annotation.
+        :param selected_anntoken: If provided only return the selected annotation.
         :param use_flat_vehicle_coordinates: Instead of the current sensor's coordinate frame, use ego frame which is
                                              aligned to z-plane in the world.
-        :param radius: if specified, the funcion returns all boxes that are far at most <radius> from the ego vehicle.
+        :param radius: if specified, the funcion returns all boxes that are far at most <alpha> from the ego vehicle.
         :return: (data_path, boxes, camera_intrinsic <np.array: 3, 3>)
         """
 
@@ -225,57 +234,26 @@ class CamDataProcessor(BaseTableLoader):
             cam_intrinsic = None
             imsize = None
 
-        # Retrieve all sample annotations and map to sensor coordinate system.
-        if selected_anntokens is not None:
-            boxes = list(map(self.get_box, selected_anntokens))
-        else:
-            boxes = self.get_boxes(sample_data_token)
+        box = self.get_box(selected_anntoken)
+        if self.alpha is None or self.distance_ego_to_object(pose_record['translation'], box) < self.alpha:
+            if use_flat_vehicle_coordinates:
+                # Move box to ego vehicle coord system parallel to world z plane.
+                yaw = Quaternion(pose_record['rotation']).yaw_pitch_roll[0]
+                box.translate(-np.array(pose_record['translation']))
+                box.rotate(Quaternion(scalar=np.cos(yaw / 2), vector=[0, 0, np.sin(yaw / 2)]).inverse)
+            else:
+                # Move box to ego vehicle coord system.
+                box.translate(-np.array(pose_record['translation']))
+                box.rotate(Quaternion(pose_record['rotation']).inverse)
+                #  Move box to sensor coord system.
+                box.translate(-np.array(cs_record['translation']))
+                box.rotate(Quaternion(cs_record['rotation']).inverse)
 
-        # Make list of Box objects including coord system transforms.
-        box_list = []
-
-
-
-        #####à
-        #fig, ax = plt.subplots(1, 1, figsize=(9, 9))
-        #sd_record = self.get('sample_data', sample_data_token)
-        #data_path = osp.join(self.dataroot, sd_record['filename'])
-        #im = Image.open(data_path)
-        #ax.imshow(im)
-
-        ########
-
-        for box in boxes:      
-            
-            distance = self.distance_ego_to_object(pose_record['translation'], box)# np.linalg.norm(np.array(pose_record['translation']-np.array(box.center)))
-            if distance < radius:
-                if use_flat_vehicle_coordinates:
-                    # Move box to ego vehicle coord system parallel to world z plane.
-                    yaw = Quaternion(pose_record['rotation']).yaw_pitch_roll[0]
-                    box.translate(-np.array(pose_record['translation']))
-                    box.rotate(Quaternion(scalar=np.cos(yaw / 2), vector=[0, 0, np.sin(yaw / 2)]).inverse)
-                else:
-                    # Move box to ego vehicle coord system.
-                    box.translate(-np.array(pose_record['translation']))
-                    box.rotate(Quaternion(pose_record['rotation']).inverse)
-
-                    #  Move box to sensor coord system.
-                    box.translate(-np.array(cs_record['translation']))
-                    box.rotate(Quaternion(cs_record['rotation']).inverse)
-
-                if sensor_record['modality'] == 'camera' and not \
-                        box_in_image(box, cam_intrinsic, imsize, vis_level=box_vis_level):
-                    continue
+            if sensor_record['modality'] == 'camera' and not box_in_image(box, cam_intrinsic, imsize, vis_level=box_vis_level):
+                return None
                 
-                ##### 
-                #box.render(ax, view=cam_intrinsic, normalize=True, colors=('r','r','r'))
-                ####à
-                box_list.append(box)
-        
-        #ax.axis('off')
-        #plt.savefig(f'ann{time.time()}.png')
-
-        return  box_list
+            return  box
+        return None
 
 
     def get_box(self, sample_annotation_token: str) -> Box:
@@ -306,12 +284,17 @@ if __name__ == "__main__":
     parser.add_argument('--dataroot', required=True, type=str, help='Path to the nuScenes dataset directory.')
     parser.add_argument('--dataoutput', required=True, type=str, help='Path for the output data file directory.')
     parser.add_argument('--version', required=True, type=str, choices=["v1.0-mini", "v1.0-trainval"], help='Version of the nuScenes dataset to process.')
-    parser.add_argument('--complexity', required=True, type=int, default=0, choices=[0,1], help='Level of complexity of the dataset.')
+    parser.add_argument('--alpha', type=float, default=None, help='Distance within consider detections. Defaults to None if not specified.')
+    #parser.add_argument('--complexity', required=True, type=int, default=0, choices=[0,1], help='Level of complexity of the dataset.')
 
     args = parser.parse_args()
-    processor = CamDataProcessor(args.dataroot, args.dataoutput, args.version,args.complexity)
+    processor = CamDataProcessor(args.dataroot, args.dataoutput, args.version, args.alpha)#,args.complexity)
+    
+   #sample_tokens = pd.DataFrame(processor.sample)[pd.DataFrame(processor.sample)['scene_token'] == 'bebf5f5b2a674631ab5c88fd1aa9e87a']['token'].to_frame()
+        
     sample_tokens = pd.DataFrame(processor.sample)['token'].to_frame()
+
     processor.cam_detection(sample_tokens)
 
-#python3 create_cam_data.py --dataroot /home/saramontese/Desktop/MasterThesis/example/dataset/data/sets/nuscenes --dataoutput /home/saramontese/Desktop/MasterThesis/example/dataset/data/sets/nuscenes --version v1.0-mini --complexity 3
+#python3 create_cam_data.py --dataroot /home/saramontese/Desktop/MasterThesis/example/dataset/data/sets/nuscenes --dataoutput /home/saramontese/Desktop/MasterThesis/example/dataset/data/sets/nuscenes --version v1.0-trainval --alpha 10
 

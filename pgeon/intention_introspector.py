@@ -136,7 +136,7 @@ class IntentionIntrospector(object):
             node_probabilities = np.array([self.pg.nodes[node]['probability'] for node in intention_full_nodes])
             intention_probability = np.sum(node_probabilities)
             intention_vals = np.array([self.intention[node][desire] for node in intention_full_nodes])
-            expected_int_probability = np.dot(intention_vals, node_probabilities)/intention_probability #if intention_probability >0 else 0
+            expected_int_probability = np.dot(intention_vals, node_probabilities)/intention_probability if intention_probability >0 else 0
         else:
             intention_full_nodes = [
                 node for node in self.pg.nodes 
@@ -148,7 +148,7 @@ class IntentionIntrospector(object):
                 max_intention_vals = np.array([max(self.intention[node].values()) for node in intention_full_nodes])
 
                 intention_probability = np.sum(node_probabilities)
-                expected_int_probability = np.dot(max_intention_vals, node_probabilities)/intention_probability #if intention_probability >0 else 0
+                expected_int_probability = np.dot(max_intention_vals, node_probabilities)/intention_probability if intention_probability >0 else 0
             else:
                 intention_probability = 0
                 expected_int_probability = 0

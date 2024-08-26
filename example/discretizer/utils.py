@@ -23,7 +23,7 @@ class Rotation(Enum):
 
 
 class LanePosition(Enum):
-    LEFT = auto()
+    CENTER = auto()
     ALIGNED = auto()
     OPPOSITE = auto()
     NONE = auto() #for all the cases not includend in the previous categories (e.g car headed perpendicular to the road, parkins, etc..)
@@ -123,22 +123,13 @@ class IsZebraNearby(Enum):
   
   def __str__(self):
         return f'{self.__class__.__name__}({self.name})'
-  
+    
 
-
-class IsStopSignNearby(Enum): 
-  #includes Stop Sign and Yield Sign
-  YES = auto()
-  NO = auto()
-  
-  def __str__(self):
-        return f'{self.__class__.__name__}({self.name})'
-  
-
-class SignNearby(Enum): 
+class StopAreaNearby(Enum): 
   #includes Stop Sign and Yield Sign
   STOP = auto()
   YIELD = auto()
+  TURN_STOP = auto()
   NO = auto()
   
   def __str__(self):
@@ -146,16 +137,16 @@ class SignNearby(Enum):
 
 
 class Action(Enum):
-  IDLE = auto() 
-  TURN_LEFT = auto()
-  TURN_RIGHT = auto()
-  GAS = auto() 
-  BRAKE = auto()
-  STRAIGHT = auto() #car keep going straight at same pace
-  GAS_TURN_RIGHT= auto()
-  GAS_TURN_LEFT= auto()
-  BRAKE_TURN_RIGHT = auto()  
-  BRAKE_TURN_LEFT = auto()
+  IDLE = auto()  #1
+  TURN_LEFT = auto() #2
+  TURN_RIGHT = auto() #3
+  GAS = auto() #4
+  BRAKE = auto() #5
+  STRAIGHT = auto() #6 
+  GAS_TURN_RIGHT= auto() #7
+  GAS_TURN_LEFT= auto() #8
+  BRAKE_TURN_RIGHT = auto() #9  
+  BRAKE_TURN_LEFT = auto() #10
 
 
 

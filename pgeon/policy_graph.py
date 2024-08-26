@@ -597,12 +597,12 @@ class PolicyGraph(nx.MultiDiGraph):
 
     def _save_csv(self,
                   path_nodes: str,
-                  path_edges: str,
-                  path_trajectories: str
+                  path_edges: str#,
+                  #path_trajectories: str
                   ):
         path_to_nodes_includes_csv = path_nodes[-4:] == '.csv'
         path_to_edges_includes_csv = path_edges[-4:] == '.csv'
-        path_to_trajs_includes_csv = path_trajectories[-4:] == '.csv'
+        #path_to_trajs_includes_csv = path_trajectories[-4:] == '.csv' #NOTE: handle case in which we delete wcc
 
         node_ids = {}
         with open(f'{path_nodes}{"" if path_to_nodes_includes_csv else ".csv"}', 'w+') as f:
@@ -622,6 +622,7 @@ class PolicyGraph(nx.MultiDiGraph):
                                 self[state_from][state_to][action]['probability'],
                                 self[state_from][state_to][action]['frequency']])
 
+        '''
         with open(f'{path_trajectories}{"" if path_to_trajs_includes_csv else ".csv"}', 'w+') as f:
             csv_w = csv.writer(f)
 
@@ -637,6 +638,7 @@ class PolicyGraph(nx.MultiDiGraph):
                         csv_trajectory.append(element)
 
                 csv_w.writerow(csv_trajectory)
+        '''
 
     # gram format doesn't save the trajectories
     def save(self,
@@ -650,8 +652,10 @@ class PolicyGraph(nx.MultiDiGraph):
             raise NotImplementedError('format must be one of pickle, csv or gram')
 
         if format == 'csv':
-            assert len(path) == 3, \
-                "When saving in CSV format, path must be a list of 3 elements (nodes, edges, trajectories)!"
+            #assert len(path) == 3, \
+            #    "When saving in CSV format, path must be a list of 3 elements (nodes, edges, trajectories)!"
+            assert len(path) == 2, \
+                "When saving in CSV format, path must be a list of 2 elements (nodes, edges)!"
             self._save_csv(*path)
         elif format == 'gram':
             assert isinstance(path, str), "When saving in gram format, path must be a string!"

@@ -14,7 +14,7 @@ if __name__ == '__main__':
     parser.add_argument('--city', help='Specify city to consider when building the PG.', choices=['all', 'b','s1','s2', 's3'], default="all")
     parser.add_argument('--weather', help='Specify whether the Policy Graph should contain bad weather scenes only (with rain), good weather scenes only or all.', default='all', choices=['all','rain','no_rain'])
     parser.add_argument('--tod', help='Flag to specify whether the Policy Graph should contain night scenes or day scenes.',  default='all', choices=['all','day','night'])
-    parser.add_argument('--discretizer', help='Specify the discretizer of the input data.', choices=['0a', '0b','0c','1a','1b','1c'], default='0a')
+    parser.add_argument('--discretizer', help='Specify the discretizer of the input data.', choices=['0a', '0b', '1a','1b'], default='0a')
     parser.add_argument('--output', help='Which format to output the Policy Graph',
                         default='csv', choices=['pickle', 'csv', 'gram'])
     parser.add_argument('--verbose', help='Whether to make the Policy Graph code output log statements or not',
@@ -73,6 +73,7 @@ if __name__ == '__main__':
     discretizer_configs = {
     'a': {'obj_discretizer': 'binary', 'vel_discretizer': 'binary' },
     'b': {'obj_discretizer': 'binary', 'vel_discretizer': 'multiple' }
+    #'c': {multiple, multiple}
     }
 
     default_config = {'obj_discretizer': 'binary', 'vel_discretizer': 'binary'}

@@ -1,4 +1,4 @@
-from example.discretizer.utils import calculate_object_distance, Detection, Velocity, Rotation, IsTrafficLightNearby,IsZebraNearby,SignNearby, PedestrianNearby, IsTwoWheelNearby,LanePosition, FrontObjects, BlockProgress, NextIntersection
+from example.discretizer.utils import calculate_object_distance, Detection, Velocity, Rotation, IsTrafficLightNearby,IsZebraNearby,StopAreaNearby, PedestrianNearby, IsTwoWheelNearby,LanePosition, FrontObjects, BlockProgress, NextIntersection
 from example.discretizer.discretizer_d0 import AVDiscretizer
 from example.environment import SelfDrivingEnvironment
 from pgeon.discretizer import Predicate
@@ -51,7 +51,7 @@ class AVDiscretizerD1(AVDiscretizer):
         split_str = state_str[1:].split(' ')
         non_object_predicates = 10
         
-        pedestrian_str, bike_str, block_str, lane_pos_str, next_inter_str, vel_str, rot_str, stop_sign_str, zebra_str, traffic_light_str = split_str[0:non_object_predicates]
+        pedestrian_str, bike_str, block_str, lane_pos_str, next_inter_str, vel_str, rot_str, stop_str, zebra_str, traffic_light_str = split_str[0:non_object_predicates]
 
         n_pedestrians = pedestrian_str[:-2].split('(')[1] 
         bike_predicate = IsTwoWheelNearby[bike_str[:-2].split('(')[1]] 
@@ -60,7 +60,7 @@ class AVDiscretizerD1(AVDiscretizer):
         intersection_predicate = NextIntersection[next_inter_str[:-2].split('(')[1]]
         mov_predicate = Velocity[vel_str[:-2].split('(')[1]]
         rot_predicate = Rotation[rot_str[:-2].split('(')[1]]
-        stop_sign_predicate = SignNearby[stop_sign_str[:-2].split('(')[1]] 
+        stop_predicate = StopAreaNearby[stop_str[:-2].split('(')[1]] 
         zebra_predicate = IsZebraNearby[zebra_str[:-2].split('(')[1]] 
         traffic_light_predicate = IsTrafficLightNearby[traffic_light_str[:-2].split('(')[1]] 
 
@@ -72,7 +72,7 @@ class AVDiscretizerD1(AVDiscretizer):
             Predicate(NextIntersection, [intersection_predicate]),
             Predicate(Velocity, [mov_predicate]),
             Predicate(Rotation, [rot_predicate]),
-            Predicate(SignNearby, [stop_sign_predicate]),
+            Predicate(StopAreaNearby, [stop_predicate]),
             Predicate(IsZebraNearby, [zebra_predicate]),
             Predicate(IsTrafficLightNearby, [traffic_light_predicate])
         ]
@@ -108,9 +108,9 @@ class AVDiscretizerD1(AVDiscretizer):
                 yield pedestrian_cross, two_wheeler, block_progress, lane_position, next_intersection, velocity, Predicate(Rotation, [r]), stop_sign, zebra_crossing, traffic_light, *detections
 
 
-        for s in SignNearby:
+        for s in StopAreaNearby:
             if [s]!= stop_sign.value:
-                yield pedestrian_cross, two_wheeler, block_progress, lane_position, next_intersection, velocity,rotation, Predicate(SignNearby, [s]), zebra_crossing, traffic_light, *detections
+                yield pedestrian_cross, two_wheeler, block_progress, lane_position, next_intersection, velocity,rotation, Predicate(StopAreaNearby, [s]), zebra_crossing, traffic_light, *detections
         
         for z in IsZebraNearby:
             if [z]!= zebra_crossing.value:
@@ -173,7 +173,7 @@ class AVDiscretizerD1(AVDiscretizer):
                         for n in NextIntersection:
                             for v in self.vel_values:
                                 for r in Rotation:
-                                    for s in SignNearby:
+                                    for s in StopAreaNearby:
                                         for z in IsZebraNearby:
                                             for t in IsTrafficLightNearby:
                                                 for cam in Detection.discretizations[self.obj_discretization]:
@@ -181,7 +181,7 @@ class AVDiscretizerD1(AVDiscretizer):
                                                     #for left_cam in Detection.discretizations[self.obj_discretization]:
                                                         nearby_state =  Predicate(PedestrianNearby, [PedestrianNearby(p, self.obj_discretization)]), Predicate(IsTwoWheelNearby, [tw]), Predicate(BlockProgress, [b]), \
                                                                 Predicate(LanePosition, [l]), Predicate(NextIntersection, [n]), Predicate(Velocity, [v]), \
-                                                                Predicate(Rotation, [r]), Predicate(SignNearby, [s]), Predicate(IsZebraNearby, [z]), \
+                                                                Predicate(Rotation, [r]), Predicate(StopAreaNearby, [s]), Predicate(IsZebraNearby, [z]), \
                                                                 Predicate(IsTrafficLightNearby, [t]), Predicate(FrontObjects, [FrontObjects(cam, self.obj_discretization)])#,\
                                                                 #Predicate(FrontRightObjects, [FrontLeftObjects(left_cam, self.obj_discretization)])
                                                         
@@ -223,7 +223,7 @@ class AVDiscretizerD1(AVDiscretizer):
                         for n in NextIntersection:
                             for v in self.vel_values: 
                                 for r in Rotation:
-                                    for s in SignNearby:
+                                    for s in StopAreaNearby:
                                         for z in IsZebraNearby:
                                             for t in IsTrafficLightNearby:
                                                 for cam in Detection.discretizations[self.obj_discretization]:

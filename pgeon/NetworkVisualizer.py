@@ -1,6 +1,6 @@
 import random
 import itertools
-from example.discretizer.utils import get_weight_assigned_color
+#from example.discretizer.utils import get_weight_assigned_color
 from matplotlib import pyplot as plt
 from screeninfo import get_monitors
 from pyvis.network import Network
@@ -87,7 +87,7 @@ class NetworkVisualizer:
                     attributes[key]['action'],
                     round(weight, num_of_decimals)
                   )
-                  edge_colors.append(get_weight_assigned_color(weight))
+                  edge_colors.append('#332FD0')#get_weight_assigned_color(weight))
         nodes = {node: "" for node in self.pg.nodes() #"str(node).replace('-', '\n')"
                  if self.pg.in_degree(node) + self.pg.out_degree(node) > 0}
         

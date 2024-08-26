@@ -239,7 +239,7 @@ class SelfDrivingEnvironment(Environment):
     #PROCESS NEARBY OBJECTS INFORMATION
     ###################################
 
-    def is_near_stop_sign(self, x,y, front_area:Polygon):
+    def is_near_stop_area(self, x,y, front_area:Polygon):
         """
         Check if there is a stop sign or yield nearby the given pose (x, y).
 
@@ -249,19 +249,32 @@ class SelfDrivingEnvironment(Environment):
             front_area (Polygon): Area in front of the vehicle to check for signs.
 
         Returns:
-            bool: True if a sign is nearby the ego car in the same road block or at an interesection, False otherwise.
-        
+            None if no stop area is nearby, otherwise the specific cateogory of the stop area.        
         """        
 
         current_road_block = self.nusc_map.record_on_point(x,y, 'road_block')
 
         for stop_line in self.nusc_map.stop_line:
-            if stop_line['stop_line_type'] in ['STOP_SIGN','YIELD']: #,'TURN_STOP']:
-                    stop_line_polygon = self.nusc_map.extract_polygon(stop_line['polygon_token'])                
-                    if stop_line_polygon.intersects(front_area):
-                        if stop_line['road_block_token'] == current_road_block or current_road_block == '': #or intersection
-                                return stop_line['stop_line_type']
+            stop_line_type = stop_line['stop_line_type']
+            
+            if stop_line_type in ['STOP_SIGN', 'YIELD', 'TURN_STOP']:
+                stop_line_polygon = self.nusc_map.extract_polygon(stop_line['polygon_token'])
                 
+                if stop_line_polygon.intersects(front_area):          
+                    if stop_line_type in ['STOP_SIGN', 'YIELD']:
+                        if stop_line['road_block_token'] == current_road_block or not current_road_block:
+                            return stop_line_type
+                    
+                    elif stop_line_type == 'TURN_STOP':# and not stop_line['ped_crossing_tokens']:
+                        return 'TURN_STOP'
+
+        #for stop_line in self.nusc_map.stop_line:
+        #    if stop_line['stop_line_type'] in ['STOP_SIGN','YIELD']:
+        #        stop_line_polygon = self.nusc_map.extract_polygon(stop_line['polygon_token'])                
+        #        if stop_line_polygon.intersects(front_area):
+        #            if stop_line['road_block_token'] == current_road_block or current_road_block == '': #or intersection
+        #                return stop_line['stop_line_type']
+         
         return None
 
 
@@ -288,8 +301,6 @@ class SelfDrivingEnvironment(Environment):
                     if stop_line_polygon.intersects(front_area):
                         if stop_line['ped_crossing_tokens']:
                             return True 
-                        else:
-                            print('Turn stop without zebra crossing. To be handled.)') #TODO:
             return False
 
     
