@@ -183,9 +183,13 @@ class IntentionIntrospector(object):
 
     def question6(self, desire:Desire, state:Set[Predicate]):
         print(f'How do you plan to fulfill {desire.name} from state {state}?')
-        print(self.how(desire, state)) #TODO: handle case in which desire cannot be fulfilled
+        path = self.how(desire, state)
+        if len(path)==0:
+            print('From such state there is not path to fulfill the desire.')
+        else:
+            print(path) 
+        
     
-
 
     def how(self, desire:Desire, state: Set[Predicate]):
         desire_nodes = [(node, self.check_desire(node, desire.clause, desire.actions)) for node in self.pg.nodes if self.check_desire(node, desire.clause, desire.actions) is not None]
@@ -193,8 +197,10 @@ class IntentionIntrospector(object):
             if state == node:
                 return [self.pg.discretizer.get_action_from_id(action) for action in desire.actions ] #desire.actions
  
-        intention_vals = [(successor, self.intention[successor][desire]) for successor in self.pg.successors(state) if successor in self.intention and desire in self.intention[successor] ]
-        max_successor = max(intention_vals, key=lambda x: x[1])[0]
+        intention_vals =  [(successor, self.intention[successor][desire]) for successor in self.pg.successors(state) if successor in self.intention and desire in self.intention[successor] ]
+        if not intention_vals:
+            return []
+        max_successor = max(intention_vals, key=lambda x: x[1])[0]        
         actions_id = list(self.pg.get_edge_data(state, max_successor).keys())
         actions = [self.pg.discretizer.get_action_from_id(action) for action in actions_id]  #Given s, there can be 1+ actions that lead to s' 
         #NOTE: how to decide which action if there are more tha one?
@@ -219,12 +225,10 @@ class IntentionIntrospector(object):
         print(f"How likely are you to perform your desirable action {desire.actions} when you are in the state region {desire.clause}?")
         print(f"Probability: {self.get_desire_metrics(desire.clause)[1]}")
     
+            
     
-    def question6(self, desire:Desire, state: Set[Predicate]):
-        print(f'How do you plan to fulfill {desire.name} from state {state}?')
-        print(self.how(desire, state))
-        
-    def how(self, desire:Desire, state: Set[Predicate]):
+    '''
+    def how_any(self, desire:Desire, state: Set[Predicate]):
         desire_nodes = [(node, self.check_desire(node, desire.clause, desire.actions)) for node in self.pg.nodes if self.check_desire(node, desire.clause, desire.actions) is not None]
 
         for node, _ in desire_nodes:
@@ -235,7 +239,8 @@ class IntentionIntrospector(object):
         max_successor = max(max_intention_vals, key=lambda x: x[1])[0]
         edge_data = self.pg.get_edge_data(state, max_successor)
         action = edge_data.get('action')  
-        subsequent_actions = self.how(desire, max_successor)
+        subsequent_actions = self.how_any(desire, max_successor)
 
         return [action] + subsequent_actions if subsequent_actions else [action]
 
+    '''

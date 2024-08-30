@@ -1,6 +1,6 @@
 from collections import defaultdict
 from enum import Enum, auto
-from typing import Tuple, Any, List, Union, Set, Dict
+from typing import Tuple, Any, List, Union, Set
 import csv
 import pickle
 import gymnasium as gym
@@ -9,12 +9,11 @@ import numpy as np
 import tqdm
 from pgeon.agent import Agent
 from pgeon.discretizer import Predicate, Discretizer
-from pgeon import NetworkVisualizer
 import pandas as pd
-from example.discretizer.utils import Action, BlockProgress
+from example.discretizer.utils import Velocity, BlockProgress,IdleTime
 from example.discretizer.discretizer_d0 import AVDiscretizer
 from example.environment import SelfDrivingEnvironment
-import math
+
 
 class PolicyGraph(nx.MultiDiGraph):
 
@@ -188,11 +187,12 @@ class PolicyGraph(nx.MultiDiGraph):
             Returns:
                 List containing tuples of (current state ID, action ID, next state ID).
         """
-        #self.discretizer.detection_cameras = [col for col in scene.columns if 'CAM' in col] 
         self.discretizer.detection_cameras = [col for col in scene.columns if 'CAM_FRONT' in col ]#'CAM_FRONT_RIGHT' in col or 'CAM_FRONT_RIGHT' in col]
         trajectory = []
         in_intersection = False
         intersection_info = []
+
+        consecutive_stopped_count = 0
 
         for i in range(len(scene)-1):
             disc_state, action_id = self.discretizer._discretize_state_and_action(scene, i)
@@ -217,6 +217,24 @@ class PolicyGraph(nx.MultiDiGraph):
                 intersection_action = AVDiscretizer.determine_intersection_action((pre_intersection_x, pre_intersection_y, start_intersection_x, start_intersection_y), (end_intersection_x, end_intersection_y, post_intersection_x, post_intersection_y))
                 intersection_info.append((intersection_start, intersection_action))
             
+            
+            
+            if '2' in self.discretizer.id:
+                velocity = next((predicate for predicate in disc_state if predicate.predicate.__name__ == 'Velocity' ), None)
+                if velocity == Predicate(Velocity, Velocity.STOPPED):
+                    consecutive_stopped_count+=1
+                    if consecutive_stopped_count>1:
+                        #print(consecutive_stopped_count-1)
+                        state = list(disc_state)
+                        idle_predicate_idx = next((i for i, predicate in enumerate(state) if predicate.predicate.__name__ == 'IdleTime'), None)
+                        state[idle_predicate_idx] = Predicate(IdleTime,[IdleTime(consecutive_stopped_count-1)])
+                        disc_state = tuple(state)
+                else:
+                    consecutive_stopped_count=0
+
+
+
+
             if '0' in self.discretizer.id:
                 # Filter out the BlockProgress predicate from the discretized state
                 disc_state = tuple(predicate for predicate in disc_state if predicate.predicate.__name__ != 'BlockProgress')
@@ -229,6 +247,20 @@ class PolicyGraph(nx.MultiDiGraph):
         disc_last_state = self.discretizer.discretize(last_state_to_discretize, last_state_detections)
         if '0' in self.discretizer.id:
             disc_last_state = tuple(predicate for predicate in disc_last_state if predicate.predicate.__name__ != 'BlockProgress')
+
+        if '2' in self.discretizer.id:
+            velocity = next((predicate for predicate in disc_last_state if predicate.predicate.__name__ == 'Velocity' ), None)
+            if velocity == Predicate(Velocity, Velocity.STOPPED):
+                consecutive_stopped_count+=1
+                if consecutive_stopped_count>1:
+                    state = list(disc_last_state)
+                    idle_predicate_idx = next((i for i, predicate in enumerate(state) if predicate.predicate.__name__ == 'IdleTime'), None)
+                    state[idle_predicate_idx] = Predicate(IdleTime,[IdleTime(consecutive_stopped_count-1)])
+                    disc_last_state = tuple(state)  
+            else:
+                consecutive_stopped_count=0
+
+
 
         trajectory.append(disc_last_state)
 

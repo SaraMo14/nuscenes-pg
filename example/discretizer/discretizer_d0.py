@@ -1,5 +1,5 @@
 from example.dataset.utils import vector_angle
-from example.discretizer.utils import calculate_object_distance, calculate_velocity_distance, IsTrafficLightNearby,IsZebraNearby, Detection, FrontObjects, Action, LanePosition, StopAreaNearby, BlockProgress, NextIntersection, Velocity, Rotation
+from example.discretizer.utils import calculate_object_distance, calculate_velocity_distance, IdleTime, IsTrafficLightNearby,IsZebraNearby, Detection, FrontObjects, Action, LanePosition, StopAreaNearby, BlockProgress, NextIntersection, Velocity, Rotation
 from example.environment import SelfDrivingEnvironment
 import numpy as np
 from typing import Tuple, Union

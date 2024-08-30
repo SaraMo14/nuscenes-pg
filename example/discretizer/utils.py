@@ -61,7 +61,7 @@ class Detection:
         "binary": ["NO", "YES"]
     }
 
-    def __init__(self, count=0, discretization="multiple"):
+    def __init__(self, count=0, discretization="binary"):
         self.chunks = self.discretizations[discretization]
 
         if isinstance(count, str):
@@ -134,6 +134,32 @@ class StopAreaNearby(Enum):
   
   def __str__(self):
         return f'{self.__class__.__name__}({self.name})'
+
+
+
+class IdleTime:
+    def __init__(self, count=0):
+        self.chunks = ["0", "4", "5+"]
+
+        if isinstance(count, str):
+            self.count = count
+        else:
+            if count ==0:
+                self.count = self.chunks[0]
+            elif count <= 4:
+                self.count = self.chunks[1]
+            else:
+                self.count = self.chunks[2]
+    
+    def __str__(self) -> str:
+        return f'{self.count}'
+
+    def __eq__(self, other):
+        return self.count == other.count
+    
+    def __hash__(self):
+        return hash(self.count)
+
 
 
 class Action(Enum):
