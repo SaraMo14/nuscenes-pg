@@ -146,7 +146,7 @@ class IdleTime:
         else:
             if count ==0:
                 self.count = self.chunks[0]
-            elif count <= 4:
+            elif count <=4:
                 self.count = self.chunks[1]
             else:
                 self.count = self.chunks[2]

@@ -86,7 +86,8 @@ class IntentionIntrospector(object):
                             stop_criterion=1e-4):
         self.update_intention(node, desire, probability)
         for coincider in self.pg.predecessors(node):
-            if self.check_desire(coincider, desire.clause, desire.actions) is None: #TODO: review
+            if self.check_desire(coincider, desire.clause, desire.actions) is None:
+                
                 successors = self.pg.successors(coincider)
                 coincider_transitions: List[Dict[Set[Predicate], float]] = \
                     [{successor: self.get_prob(self.pg.get_edge_data(coincider, successor, key=action_id)) for successor in

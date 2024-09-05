@@ -37,7 +37,7 @@ class SelfDrivingEnvironment(Environment):
     #######################
 
     
-    def render_ego_influent_area(self, x,y,yaw, patch_size=20, non_geometric_layers=['road_divider', 'lane_divider'], size = (14,20), shift_distance = 10):
+    def render_ego_influent_area(self, x,y,yaw, patch_size=20, non_geometric_layers=['road_divider', 'lane_divider'], size = (14,20), shift_distance = 10): 
         
         """
         Render the ego vehicle's influent area on a map.
@@ -260,7 +260,7 @@ class SelfDrivingEnvironment(Environment):
             if stop_line_type in ['STOP_SIGN', 'YIELD', 'TURN_STOP']:
                 stop_line_polygon = self.nusc_map.extract_polygon(stop_line['polygon_token'])
                 
-                if stop_line_polygon.intersects(front_area):          
+                if stop_line_polygon.intersects(front_area):
                     if stop_line_type in ['STOP_SIGN', 'YIELD']:
                         if stop_line['road_block_token'] == current_road_block or not current_road_block:
                             return stop_line_type
@@ -268,13 +268,6 @@ class SelfDrivingEnvironment(Environment):
                     elif stop_line_type == 'TURN_STOP':# and not stop_line['ped_crossing_tokens']:
                         return 'TURN_STOP'
 
-        #for stop_line in self.nusc_map.stop_line:
-        #    if stop_line['stop_line_type'] in ['STOP_SIGN','YIELD']:
-        #        stop_line_polygon = self.nusc_map.extract_polygon(stop_line['polygon_token'])                
-        #        if stop_line_polygon.intersects(front_area):
-        #            if stop_line['road_block_token'] == current_road_block or current_road_block == '': #or intersection
-        #                return stop_line['stop_line_type']
-         
         return None
 
 
@@ -553,7 +546,7 @@ class SelfDrivingEnvironment(Environment):
         Returns:
             tuple: A tuple containing the total count of pedestrians and cyclists.
         
-        NOTE: Only subjects with >40% visibility are considered.
+        NOTE: Only subjects with >60% visibility are considered.
         """
         tot_ped_count = 0
         tot_bike_count = 0

@@ -78,8 +78,8 @@ class AVDiscretizer(Discretizer):
         detected_predicates = []
         for cam_type, objects in detections.items():
             tot_count = 0
-            for (category, _), count in ast.literal_eval(objects).items():
-                if 'human' not in category:
+            for (category, attribute), count in ast.literal_eval(objects).items():
+                if 'human' not in category or  ('cycle' in category and 'no_rider' in attribute):
                     tot_count+=count
             detection_class = self.DETECTION_CLASS_MAPPING.get(cam_type, None)
             predicate = Predicate(
@@ -125,7 +125,7 @@ class AVDiscretizer(Discretizer):
     def discretize_stop_line(self, x,y,yaw):
         # Create a rotated rectangle around the vehicle's current pose
         yaw_in_deg = np.degrees(-(np.pi / 2) + yaw)
-        area = create_rectangle((x,y), yaw_in_deg, size=(16,20), shift_distance=10)
+        area = create_rectangle((x,y), yaw_in_deg, size=(14,20), shift_distance=10) #(10,12) shift: 6
         
         stop_area = self.environment.is_near_stop_area(x,y,area)
         if stop_area is None:
@@ -198,7 +198,7 @@ class AVDiscretizer(Discretizer):
         post_vector = np.array([x_n1 - x_n, y_n1 - y_n]) 
         angle = vector_angle(pre_vector, post_vector)
         
-        if abs(angle) < np.radians(30):
+        if abs(angle) < np.radians(20): #30
             return Predicate(NextIntersection,[NextIntersection.STRAIGHT])
         elif np.cross(pre_vector, post_vector) > 0:
             return Predicate(NextIntersection,[NextIntersection.LEFT])
