@@ -79,7 +79,7 @@ class AVDiscretizer(Discretizer):
         for cam_type, objects in detections.items():
             tot_count = 0
             for (category, attribute), count in ast.literal_eval(objects).items():
-                if 'human' not in category or  ('cycle' in category and 'no_rider' in attribute):
+                if 'human' not in category and 'without_rider' not in attribute:
                     tot_count+=count
             detection_class = self.DETECTION_CLASS_MAPPING.get(cam_type, None)
             predicate = Predicate(

@@ -37,7 +37,7 @@ class SelfDrivingEnvironment(Environment):
     #######################
 
     
-    def render_ego_influent_area(self, x,y,yaw, patch_size=20, non_geometric_layers=['road_divider', 'lane_divider'], size = (14,20), shift_distance = 10): 
+    def render_ego_influent_area(self, x,y,yaw, patch_size=20, non_geometric_layers=['road_divider', 'lane_divider'], size = (14,16), shift_distance = 8): #(14,20) 10
         
         """
         Render the ego vehicle's influent area on a map.
