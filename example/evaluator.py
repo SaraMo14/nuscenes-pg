@@ -64,22 +64,3 @@ class PolicyGraphEvaluator:
         return {'Expected_Hs': expected_Hs, 'Expected_Ha': expected_Ha, 'Expected_Hw': expected_Hw}
     
     
-    '''
-    def update_state_tracking(self, state):
-        """
-        Updates the visited and newly discovered states based on the current state.
-        """
-        if state not in self.visited_states:
-            self.newly_discovered_states.add(state)
-        self.visited_states.add(state)
-
-
-    def compute_proportion_of_discovery(self):
-        """
-        Computes the proportion of newly discovered states to total visited states.
-        """
-        if len(self.visited_states) == 0:
-            return 0  # Prevent division by zero
-        return len(self.newly_discovered_states) / len(self.visited_states)
-    '''
-

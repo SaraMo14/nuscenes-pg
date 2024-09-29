@@ -125,7 +125,7 @@ class AVDiscretizer(Discretizer):
     def discretize_stop_line(self, x,y,yaw):
         # Create a rotated rectangle around the vehicle's current pose
         yaw_in_deg = np.degrees(-(np.pi / 2) + yaw)
-        area = create_rectangle((x,y), yaw_in_deg, size=(14,20), shift_distance=10) #(10,12) shift: 6
+        area = create_rectangle((x,y), yaw_in_deg, size=(10,12), shift_distance=6) #(14,16) shift: 8
         
         stop_area = self.environment.is_near_stop_area(x,y,area)
         if stop_area is None:
