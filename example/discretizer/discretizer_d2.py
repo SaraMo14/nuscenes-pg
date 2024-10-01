@@ -198,9 +198,7 @@ class AVDiscretizerD2(AVDiscretizerD1):
                                             for z in IsZebraNearby:
                                                 for t in IsTrafficLightNearby:
                                                     for cam in Detection.discretizations[self.obj_discretization]:
-                                                    #for right_cam in Detection.discretizations[self.obj_discretization]:
-                                                        #for left_cam in Detection.discretizations[self.obj_discretization]:
-                                                            all_tuples.append((i, p, tw, b, l,n,v,r,s,z,t,cam))#, left_cam))
+                                                            all_tuples.append((i, p, tw, b, l,n,v,r,s,z,t,cam))
         return all_tuples
     
 

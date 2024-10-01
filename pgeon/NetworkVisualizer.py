@@ -1,21 +1,12 @@
 import random
-import itertools
-#from example.discretizer.utils import get_weight_assigned_color
 from matplotlib import pyplot as plt
-from screeninfo import get_monitors
-from pyvis.network import Network
 import networkx as nx
 
 
 
 class NetworkVisualizer:
-    """
-    Network Visualizer.
 
-    FOLDER_PATH (str): Folder path where the visualizations are saved.
-    """
-
-    FOLDER_PATH = './plots/graphs/'
+    FOLDER_PATH = './plots/graphs/' #Folder path where the visualizations are saved.
 
     def __init__(self, pg, layout, name='nx'):
         """
@@ -28,29 +19,7 @@ class NetworkVisualizer:
         self.pg = pg
         self.name = name
         self.layout = layout
-        '''
-    def get_size_nodes(self, frequencies):
-        """
-        Returns the size of each node in respect to the frequency in which it is visited.
-        """
-        minimum = 3
-        maximum = 10
-        node_sizes = {}
 
-        # Compute the maximum value
-        for node, actions in frequencies.items():
-            partial_sum = []
-            for action, next_states in actions.items():
-                partial_sum.append(sum(next_states.values()))
-            node_sizes[node] = sum(partial_sum)
-
-        max_value = max(node_sizes.values())
-        # Each node has size between [minimum, maximum]
-        node_sizes = {node: max(minimum, (freq * maximum) // max_value) for node, freq in node_sizes.items()}
-
-        return node_sizes
-
-  '''
 
     @staticmethod
     def get_random_color():
@@ -87,7 +56,7 @@ class NetworkVisualizer:
                     attributes[key]['action'],
                     round(weight, num_of_decimals)
                   )
-                  edge_colors.append('#332FD0')#get_weight_assigned_color(weight))
+                  edge_colors.append('#332FD0')
         nodes = {node: "" for node in self.pg.nodes() #"str(node).replace('-', '\n')"
                  if self.pg.in_degree(node) + self.pg.out_degree(node) > 0}
         
@@ -115,24 +84,8 @@ class NetworkVisualizer:
             edgelist=[edge for edge in list(self.pg.edges()) if edge[0] != edge[1] or allow_recursion]
         )
 
-        """
-        nx.draw_networkx_edge_labels(
-            self.pg, pos,
-            edge_labels=edge_labels,
-            font_color='#534340',
-            label_pos=0.7,
-            font_size=font_size
-        ) """
-	
-        # Show the graph
-        plt.show()
-
-        # Save the Graph
+ 
         if save:
           plt.savefig(f'{training_id}.png')
-
-    def get_file_path(self):
-        """
-        Returns the path where the interactive visualization will be saved.
-        """
-        return self.FOLDER_PATH + self.layout + '/' + self.name + '.html'
+        else:
+            plt.show()

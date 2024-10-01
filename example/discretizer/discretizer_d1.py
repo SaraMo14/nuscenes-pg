@@ -177,14 +177,11 @@ class AVDiscretizerD1(AVDiscretizer):
                                         for z in IsZebraNearby:
                                             for t in IsTrafficLightNearby:
                                                 for cam in Detection.discretizations[self.obj_discretization]:
-                                                #for right_cam in Detection.discretizations[self.obj_discretization]:
-                                                    #for left_cam in Detection.discretizations[self.obj_discretization]:
                                                         nearby_state =  Predicate(PedestrianNearby, [PedestrianNearby(p, self.obj_discretization)]), Predicate(IsTwoWheelNearby, [tw]), Predicate(BlockProgress, [b]), \
                                                                 Predicate(LanePosition, [l]), Predicate(NextIntersection, [n]), Predicate(Velocity, [v]), \
                                                                 Predicate(Rotation, [r]), Predicate(StopAreaNearby, [s]), Predicate(IsZebraNearby, [z]), \
-                                                                Predicate(IsTrafficLightNearby, [t]), Predicate(FrontObjects, [FrontObjects(cam, self.obj_discretization)])#,\
-                                                                #Predicate(FrontRightObjects, [FrontLeftObjects(left_cam, self.obj_discretization)])
-                                                        
+                                                                Predicate(IsTrafficLightNearby, [t]), Predicate(FrontObjects, [FrontObjects(cam, self.obj_discretization)])
+                                                                
                                                         #print(f'distance: {self.distance(state, nearby_state)}')
                                                         if 1 < self.distance(state, nearby_state) < self.eps:
                                                             yield nearby_state
@@ -227,9 +224,7 @@ class AVDiscretizerD1(AVDiscretizer):
                                         for z in IsZebraNearby:
                                             for t in IsTrafficLightNearby:
                                                 for cam in Detection.discretizations[self.obj_discretization]:
-                                                #for right_cam in Detection.discretizations[self.obj_discretization]:
-                                                    #for left_cam in Detection.discretizations[self.obj_discretization]:
-                                                        all_tuples.append((p, tw, b, l,n,v,r,s,z,t,cam))#, left_cam))
+                                                        all_tuples.append((p, tw, b, l,n,v,r,s,z,t,cam))
         return all_tuples
     
 

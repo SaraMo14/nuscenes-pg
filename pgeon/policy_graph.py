@@ -50,7 +50,6 @@ class PolicyGraph(nx.MultiDiGraph):
             state_prob = float(row['p(s)'])
             state_freq = int(row['frequency'])
             is_destination = row['is_destination']
-            #is_destination = True if row['is_destination'] == 1 else False            
             node_info[state_id] = {
                 'value': pg.discretizer.str_to_state(value),
                 'probability': state_prob,
@@ -384,7 +383,8 @@ class PolicyGraph(nx.MultiDiGraph):
             return new_predicate     
         
     
-
+    def _is_predicate_in_pg_and_usable(self, predicate) -> bool:
+        return self.has_node(predicate) and len(self[predicate]) > 0
 
 
 
@@ -700,112 +700,8 @@ class PolicyGraph(nx.MultiDiGraph):
 
 
 
-    ######################
-    # POLICY ITERATION
-    ######################
-
-    def policy_iteration(self, scene_policy, gamma=0.99, theta=0.01, n_iter=30):
-        '''
-        Compute policy iteration algorithm on the policy graph build on a single (or subset) of scenes.
-
-        Args:
-            - scene_data: a policy graph based on a scene
-            - gamma:
-            - theta:
-
-        Improves on the original total policy.
-        '''
-        is_policy_stable = False
-
-        iteration_count = 0
-        with tqdm.tqdm(total=None, desc='Policy Iteration Progress') as pbar:
-
-            while not is_policy_stable:
-                
-                #policy evaluation
-                V = PolicyGraph.policy_evaluation(scene_policy, gamma,theta)
-
-                #policy improvement
-                is_policy_stable, policy = PolicyGraph.policy_improvement(scene_policy, V, gamma)
-                iteration_count += 1
-                pbar.update(1)
-
-                if iteration_count == n_iter:
-                    is_policy_stable = True
-
-        self._update_policy_graph(policy)
-        self._is_fit = True
-        print(f"Policy iteration completed in {iteration_count} iterations.")
     
-    
-    @staticmethod
-    def policy_evaluation(scene_policy, gamma, theta):
-        """
-        Computes the value function for the current policy.
-        """
-        V = defaultdict(float)
-        while True:
-            delta = 0
-            for state in scene_policy.nodes():#self.nodes():
-                v = V[state]  
-                V[state] = sum([scene_policy.get_edge_data(state, next_state, action)['probability']*
-                                (scene_policy.get_edge_data(state, next_state, action)['reward'] + gamma * V[next_state])
-                                for next_state in scene_policy[state] for action in scene_policy.get_edge_data(state, next_state)])
-                delta = max(delta, abs(v-V[state]))
-            if delta < theta:
-                break
-        return V
-    
-    @staticmethod
-    def policy_improvement(scene_policy, V, gamma):
-        """
-        Updates the policy based on the value function.
-        """
-        policy_stable = True
-        new_policy = defaultdict(lambda: defaultdict(float))
-        for state in scene_policy.nodes():#self.nodes:
-            
-            current_best_action = None
 
-            #compute action value for each action from this state
-            action_values = {}
-            for current_state, next_state, data in scene_policy.out_edges(state, data=True):              
-                reward = data['reward']
-                action = data['action']
-                action_values[action] = reward + gamma*V[next_state]
-            
-            if not action_values:
-                #print('No action starting from this state. Possibly the last state of the scene.')
-                continue
-
-            best_action = max(action_values, key=action_values.get)
-
-            #update policy to choose the best action with probability 1
-            #TODO: stochastic approach
-            for action in action_values.keys():
-                if action == best_action:
-                    new_policy[state][action] = 1.0
-                else:
-                    new_policy[state][action] = 0.0
-                
-            if current_best_action != best_action:
-                policy_stable = False
-                      
-        return policy_stable, new_policy
-        
-    def _update_policy_graph(self,policy):
-        """
-        Updates the policy graph based on the improved policy.
-        """
-        for state in policy:
-            for action in policy[state]:
-                #update edge probabilities based on the improved policy
-                for next_state in self[state]:
-                    if self.has_edge(state, next_state, key=action):
-                        self[state][next_state][action]['probability']= policy[state][action]
-
-    def _is_predicate_in_pg_and_usable(self, predicate) -> bool:
-        return self.has_node(predicate) and len(self[predicate]) > 0
 
 
 
@@ -1066,55 +962,6 @@ class PGBasedPolicy(Agent):
         return avg_nll_a, std_nll_a, avg_nll_w, std_nll_w, avg_nll_tot, std_nll_tot
 
         
-
-
-    '''
-    @staticmethod
-    def distance_metrics(estimated_trajectory, ground_truth):
-        """
-        Compute Average Displacement Error(ADE): average of pointwise L2 distances between the estimated trajectory and ground truth.
-        Compute Final Displacement Error (FDE): the L2 distance between the final points of the estimation and the ground truth.
-
-        estimated_trajectory: np.array of [x,y] values of the estimated trajectory
-        ground_truth: np.array of [x,y] values of the true trajectory
-
-        """
-        ade =  np.mean(np.linalg.norm(estimated_trajectory - ground_truth, axis=1))
-
-        final_gt = ground_truth[-1]
-        final_pred = estimated_trajectory[-1]
-        fde = np.linalg.norm(final_pred-final_gt)
-
-        return ade, fde
-
-    
-
-    
-    def get_next_state(self, current_state, action_id):
-            """
-            Function that computes next state sampling from the probability distribution P(s'|s,a) (stochastic approach)
-            
-            Args:
-                current_state: current discretized state
-                action_id: id of the action suggested by the policy
-            """
-            next_state_distr = [
-                (next_state, self.pg[current_state][next_state][action_id]['probability'])
-                for next_state in self.pg[current_state] #if this state doesnt exist? should i pick the nearest state used for the action, or leave the original?
-                if action_id in self.pg[current_state][next_state]
-            ]
-            
-            if next_state_distr:
-                return np.random.choice(
-                    [next_state for next_state, _ in next_state_distr], p=[w for _, w in next_state_distr])
-            else:
-                # pick a random next state if next_state_distr is empty 
-                all_next_states = list(self.pg[current_state])
-                if all_next_states:
-                    return np.random.choice(all_next_states)
-                else:
-                    return None  # or raise an exception if no next states exist
-        '''
 
 #python3 test_pg.py --training_id pg_Call_D0 --test_set test_v1.0-mini_lidar_0.csv --policy-mode stochastic --action-mode random --episode 2 --discretizer 0 --city 'b' --verbose 
 
