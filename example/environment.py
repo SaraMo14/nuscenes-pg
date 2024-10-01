@@ -133,7 +133,8 @@ class SelfDrivingEnvironment(Environment):
 
 
     def render_rectangle_agent_scene(self, x,y,yaw, agent_size=(2,4)):
-            #render agent as a rectangle and show its heading direction vector compared to the direction of the lane, for each sample in the scene.
+            #Render agent as a rectangle and show its heading direction vector compared to the direction of the lane, for each sample in the scene.
+
             road_segment_token = self.nusc_map.record_on_point(x,y, 'road_segment')
             current_lane = self.nusc_map.record_on_point(x,y, 'lane')
 
@@ -181,18 +182,6 @@ class SelfDrivingEnvironment(Environment):
     ## PROCESS ENVIRONEMNT 
     ########################
 
-    '''
-
-    def keep_drivable_area(self,x,y):
-        is_lane_area = self.nusc_map.record_on_point(x, y, 'lane') 
-        is_road = self.nusc_map.record_on_point(x, y, 'road_segment')
-        #TODO: exclude road_blocks from road_segment
-        if len(is_lane_area) == 0 and len(is_road)==0:
-            x,y = self.reach_drivable_area(x,y)
-        
-        return x,y
-
-    '''
 
 
     def reach_drivable_area(self, x,y, radius:float=5, resolution_meters:float = 0.5):

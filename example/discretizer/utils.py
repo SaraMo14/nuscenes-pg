@@ -43,9 +43,7 @@ class BlockProgress(Enum):
 
 
 class NextIntersection(Enum):
-    #what is my behavior at the next intersection? Do i go left, STRAIGH or RIGHT?
-    # This is something that you know being a driver of the vehicle and affects how you're going to drive.
-    # This allows the check for desires.
+    #Answers to the question: What is my behavior at the next intersection? Do i go LEFT, STRAIGH or RIGHT?
     RIGHT = auto()
     LEFT = auto()
     STRAIGHT = auto()

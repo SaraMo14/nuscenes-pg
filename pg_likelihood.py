@@ -10,7 +10,6 @@ import os
 
 import pandas as pd
 
-#TODO: split into 2 files: metrics computation and testing
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -18,9 +17,9 @@ if __name__ == '__main__':
                         help='The id of the Policy Graph to be loaded')
     parser.add_argument('--test_set',
                         help="csv file containg the test set of the preprocessed nuScenes dataset.")
-    parser.add_argument('--policy-mode',
-                        help='Whether to use the original agent, or a greedy or stochastic PG-based policy',
-                        choices=['original','random','greedy', 'stochastic'])
+    #parser.add_argument('--policy-mode',
+    #                    help='Whether to use the original agent, or a greedy or stochastic PG-based policy',
+    #                   choices=['original','random','greedy', 'stochastic'])
     parser.add_argument('--action-mode',
                         help='When visiting an unknown state, whether to choose action at random or based on what similar nodes chose.',
                         choices=['random', 'similar_nodes'], default='random')     
@@ -40,7 +39,6 @@ if __name__ == '__main__':
     pg_id, city_id, discretizer_id, test_set, verbose = args.pg_id, args.city, args.discretizer, args.test_set, args.verbose#, args.rain, args.night
     
 
-    #load test set
     dtype_dict = {
         'modality': 'category',  # for limited set of modalities, 'category' is efficient
         'scene_token': 'str',  
@@ -75,16 +73,7 @@ if __name__ == '__main__':
         test_df = test_df[test_df['location'] == city]
     
 
-    if args.policy_mode == 'greedy':
-        mode = PG.PGBasedPolicyMode.GREEDY
-    else:
-        mode = PG.PGBasedPolicyMode.STOCHASTIC
-
-    if args.action_mode == 'random':
-        node_not_found_mode = PG.PGBasedPolicyNodeNotFoundMode.RANDOM_UNIFORM
-    else:
-        node_not_found_mode = PG.PGBasedPolicyNodeNotFoundMode.FIND_SIMILAR_NODES
-        
+           
         
     
     nodes_path = f'example/dataset/data/policy_graphs/{pg_id}_nodes.csv'
@@ -116,10 +105,15 @@ if __name__ == '__main__':
         id=discretizer_id
     )   
     
-    #load PG-based agent
+    # Load PG
     pg = PG.PolicyGraph.from_nodes_and_edges(nodes_path, edges_path, environment, discretizer)
 
-
+    # Create PG-based agent
+    mode = PG.PGBasedPolicyMode.STOCHASTIC
+    if args.action_mode == 'random':
+        node_not_found_mode = PG.PGBasedPolicyNodeNotFoundMode.RANDOM_UNIFORM
+    else:
+        node_not_found_mode = PG.PGBasedPolicyNodeNotFoundMode.FIND_SIMILAR_NODES
     agent = PG.PGBasedPolicy(pg, mode, node_not_found_mode)
     
     if verbose:
@@ -131,27 +125,25 @@ if __name__ == '__main__':
 
     
     
-
-    if args.policy_mode == 'original':        
-        output_path = 'example/results/nll.csv'
-        file_exists = os.path.isfile(output_path)
-        with open(output_path, 'a',newline='') as f:
-            csv_w = csv.writer(f)
-            if not file_exists:
-                header = ['pg_id','test_id','avg_nll_action', 'std_nll_action', 'avg_nll_world', 'std_nll_world','avg_nll_tot', 'std_nll_tot' ]
-                csv_w.writerow(header)
-            avg_nll_action, std_nll_action, avg_nll_world, std_nll_world, avg_nll_tot, std_nll_tot = agent.compute_test_nll(test_set=test_df, verbose = verbose)
-            new_row = [
-                pg_id,
-                test_set,
-                avg_nll_action,
-                std_nll_action, 
-                avg_nll_world, 
-                std_nll_world,
-                avg_nll_tot,
-                std_nll_tot
-                ]
-            csv_w.writerow(new_row)
+    output_path = 'example/results/nll.csv'
+    file_exists = os.path.isfile(output_path)
+    with open(output_path, 'a',newline='') as f:
+        csv_w = csv.writer(f)
+        if not file_exists:
+            header = ['pg_id','test_id','avg_nll_action', 'std_nll_action', 'avg_nll_world', 'std_nll_world','avg_nll_tot', 'std_nll_tot' ]
+            csv_w.writerow(header)
+        avg_nll_action, std_nll_action, avg_nll_world, std_nll_world, avg_nll_tot, std_nll_tot = agent.compute_test_nll(test_set=test_df, verbose = verbose)
+        new_row = [
+            pg_id,
+            test_set,
+            avg_nll_action,
+            std_nll_action, 
+            avg_nll_world, 
+            std_nll_world,
+            avg_nll_tot,
+            std_nll_tot
+            ]
+        csv_w.writerow(new_row)
     
 
     #python3 test_pg.py --pg_id PG_trainval_Call_D1c_Wall_Tall --test_set 'low_visibility.csv' --policy-mode original --action-mode random --discretizer 1c --city 'all' --verbose

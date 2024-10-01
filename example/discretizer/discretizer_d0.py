@@ -378,9 +378,7 @@ class AVDiscretizer(Discretizer):
                                     for cam in Detection.discretizations[self.obj_discretization]:
                                         nearby_state =  Predicate(LanePosition, [l]), Predicate(NextIntersection, [n]), Predicate(Velocity, [v]), \
                                                                 Predicate(Rotation, [r]), Predicate(StopAreaNearby, [s]), Predicate(IsZebraNearby, [z]), \
-                                                                Predicate(IsTrafficLightNearby, [t]), Predicate(FrontObjects, [FrontObjects(cam, self.obj_discretization)])#,\
-                                                                #Predicate(FrontRightObjects, [FrontLeftObjects(left_cam, self.obj_discretization)])
-                                        #print(f'Distance: {self.distance(state, nearby_state)}')
+                                                                Predicate(IsTrafficLightNearby, [t]), Predicate(FrontObjects, [FrontObjects(cam, self.obj_discretization)])
                                         if 1 < self.distance(state, nearby_state) < self.eps:
                                             yield nearby_state
     
@@ -401,7 +399,7 @@ class AVDiscretizer(Discretizer):
                 int(o_lane_position.value != n_lane_position.value) + int(o_next_intersection.value!= n_next_intersection.value) \
                     + int(o_stop_sign.value != n_stop_sign.value) + int( o_zebra_crossing.value != n_zebra_crossing.value)  \
                     + int(o_traffic_light.value != n_traffic_light.value) + vel_distance  \
-                    + int(o_rotation.value !=n_rotation.value) +  obj_distance #right_obj_distance + left_obj_distance
+                    + int(o_rotation.value !=n_rotation.value) +  obj_distance 
         return distance                      
 
     
@@ -411,13 +409,12 @@ class AVDiscretizer(Discretizer):
     def all_actions(self):
         return list(Action) 
         
-    #TODO: test
     def get_predicate_space(self):
         all_tuples = []
         for l in LanePosition:
             for n in NextIntersection:
                 for v in self.vel_values:
-                    for r in Rotation:#Rotation.FORWARD, Rotation.LEFT, Rotation.RIGHT]:
+                    for r in Rotation:
                         for s in StopAreaNearby:
                             for z in IsZebraNearby:
                                 for t in IsTrafficLightNearby:

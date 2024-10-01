@@ -115,7 +115,7 @@ if __name__ == '__main__':
             city_df = df[df['location'] == city]
             pg = pg.fit(city_df, update=True, verbose=verbose)
 
-    #remove uninformative scenes (weakly cc of size 1)
+    # Remove uninformative scenes (|WCC|=1)
     weakly_connected_components = list(nx.weakly_connected_components(pg))
     for component in weakly_connected_components:
         if len(component) == 1:

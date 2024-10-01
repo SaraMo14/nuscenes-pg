@@ -13,9 +13,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--pg_id',
                         help='The id of the Policy Graph to be loaded')
-    #parser.add_argument('--verbose', 
-                        #help='Whether to make the Policy Graph code output log statements or not',
-                        #action='store_true')
 
     
     args = parser.parse_args()
@@ -42,6 +39,7 @@ if __name__ == '__main__':
             break
 
     DiscretizerClass = AVDiscretizer if '0' in discretizer_id else AVDiscretizerD1 if '1' in discretizer_id else AVDiscretizerD2
+    
     # Instantiate the discretizer with the chosen configuration
     discretizer = DiscretizerClass(
         environment,
@@ -50,7 +48,7 @@ if __name__ == '__main__':
         id=discretizer_id
     )   
     
-    #load PG-based agent
+    # Load PG
     pg = PG.PolicyGraph.from_nodes_and_edges(nodes_path, edges_path, environment, discretizer)
 
     ##################
