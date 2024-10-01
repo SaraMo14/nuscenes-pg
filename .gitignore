@@ -1,10 +1,6 @@
 .idea/*
 .DS_Store
 __pycache__/
-#data/
-policy_graphs_best/
-policy_graphs_full/
-policy_graphs_likelihood/
-sets/
+data/
 notebooks/
 #data_analysis/
