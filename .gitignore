@@ -3,4 +3,5 @@
 __pycache__/
 data/
 notebooks/
+results/
 #data_analysis/

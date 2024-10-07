@@ -162,11 +162,15 @@ class IntentionIntrospector(object):
     ##################
 
 
-    """
-    def question_intention(node:Set[Predicate], commitment_threshold:float):
+    
+    def question_intention(self, node:Set[Predicate], commitment_threshold:float):
         print(f"What do you intend to do in state s?")
         #all desires with an Id (s) over a certain threshold
-    """
+        if node in self.intention:
+            intented_desire = [d.name for d in self.intention[node] if self.intention[node][d] > commitment_threshold ]
+            print(f'Attributed intention of the following desires: {intented_desire}')
+        else:
+            print("No attributed intention in this state.")
 
     def question6(self, desire:Desire, state:Set[Predicate]):
         print(f'How do you plan to fulfill {desire.name} from state {state}?')
